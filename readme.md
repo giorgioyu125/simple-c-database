@@ -13,6 +13,6 @@ A basic key-value database implemented in C. It stores data in memory using a ha
 
 ## Building
 
-1. Requires a C compiler (like GCC). Compile all `.c` files together.
+1. Requires a C compiler that supports c23 (like GCC). Compile all `.c` files together.
 2. Make the compiled file an executable (ex: chmod +x <filename>).
 3. Run the executable!
