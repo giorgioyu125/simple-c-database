@@ -27,8 +27,6 @@
 
 // Data
 
-#define EXIT_SIGNAL -1
-
 #define TABLE_SIZE 4096
 
 extern Node** hashTable;
@@ -119,14 +117,18 @@ int cmd_add(char *argument){
     switch (datatype) {
         case STR: { 
             int error = db_set(key, data, sizeof(data));
-            if (error != DB_SUCCESS) {goto db_set_error;}
+            if (error != DB_SUCCESS) {
+                return CLI_FAILURE;
+            }
         }
         
         case INT: {
 
             int data_int = atoi(data);
             int error = db_set(key, &data_int, sizeof(int));
-            if (error != DB_SUCCESS) {goto db_set_error;}
+            if (error != DB_SUCCESS) {
+                return CLI_FAILURE;
+            }
         }
 
         case HEX: {
@@ -160,7 +162,9 @@ int cmd_add(char *argument){
             checkptr = NULL;
 
             int error = db_set(key, &converted_value, sizeof(converted_value));
-            if (error != DB_SUCCESS) {goto db_set_error;}
+            if (error != DB_SUCCESS) {
+                return CLI_FAILURE;
+            }
 
                         
             return CLI_SUCCESS;
@@ -175,7 +179,9 @@ int cmd_add(char *argument){
             }
             
             int error = db_set(key, file_ptr, sizeof(*file_ptr));
-            if (error != DB_SUCCESS) {goto db_set_error;}
+            if (error != DB_SUCCESS) {
+                return CLI_FAILURE;
+            }
             
             #if DEGUB_MODE
                 printf("[DEBUG] cmd_add: ")
@@ -184,11 +190,6 @@ int cmd_add(char *argument){
     }
 
     int error = 0;
-
-db_set_error:
-    if (error != DB_SUCCESS) {
-        return CLI_FAILURE;
-    }
 
     return CLI_SUCCESS;
 }
