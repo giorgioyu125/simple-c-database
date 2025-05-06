@@ -29,8 +29,6 @@
 
 #define TABLE_SIZE 4096
 
-extern Node** hashTable;
-
 typedef enum {
     STR,
     INT,

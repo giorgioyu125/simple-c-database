@@ -564,7 +564,7 @@ int db_load(const char* filename) {
         free(temp_key_buffer); temp_key_buffer = NULL;
         free(temp_value_buffer); temp_value_buffer = NULL;
 
-        temp_key_buffer = malloc(klen);
+        temp_key_buffer = (unsigned char*)malloc(klen);
         if (temp_key_buffer == NULL) {
             fprintf(stderr, "[ERROR] db_load: Failed to allocate %zu bytes for key buffer (Record %ld).\n", klen, record_count + 1);
             overall_status = DB_MEM_ERROR;
