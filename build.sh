@@ -1,0 +1,1 @@
+clang -D __cplusplus__strings__ -g -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wnull-dereference -Wformat=2 -Wformat-security -Werror -std=c23 -g3 -fsanitize=address,undefined -O0 main.c -o key-value_db 

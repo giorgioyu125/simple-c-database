@@ -1,5 +1,4 @@
 db_snapshot.db
-build.sh
 *.out
 persistance.txt
 key-value_db
