@@ -35,8 +35,7 @@ typedef struct Node{
     struct Node *next;
 } Node;
 
-Node** hashTable = NULL;
-
+Node **hashTable = NULL;
 
 // Strings functionality
 

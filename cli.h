@@ -1,5 +1,6 @@
 // Includes
 
+#define _POSIX_C_SOURCE 200809L
 #include <limits.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -86,108 +87,147 @@ DataTypes stodatatype(const char *datatype_str) {
 }
 
 int cmd_add(char *argument){
-    char *end_key = strchr(argument, ' ');
-    char *end_type = strchr(argument, ':');
-    
-    if ((end_key == NULL) || (end_type == NULL)) {
-        fprintf(stderr, "[ERROR] cmd_add: the provided command have a wrong format, read the help!\n");
+    char *key_str;
+    char *type_str;
+    char *data_str;
+
+    #if DEBUG_MODE
+        printf("[DEBUG] cmd_add: Received argument: \"%s\"\n", argument);
+    #endif
+
+    key_str = argument;
+    char *first_space = strchr(key_str, ' ');
+    if (first_space == NULL) {
+        fprintf(stderr, "[ERROR] cmd_add: Invalid format. Expected 'KEY DATATYPE:VALUE'. Missing space after key.\n");
+        return CLI_FAILURE;
+    }
+    *first_space = '\0'; 
+
+    type_str = first_space + 1;
+    while (*type_str && isspace((unsigned char)*type_str)) { 
+        type_str++;
+    }
+    if (*type_str == '\0') {
+        fprintf(stderr, "[ERROR] cmd_add: Invalid format. Expected 'DATATYPE:VALUE' after key. Missing type.\n");
         return CLI_FAILURE;
     }
 
-    #if DEGUB_MODE
-        printf("[DEBUG] cmd_add: Starting command argument processing...\n");
-    #endif
+    char *first_colon = strchr(type_str, ':');
+    if (first_colon == NULL) {
+        fprintf(stderr, "[ERROR] cmd_add: Invalid format. Expected 'DATATYPE:VALUE'. Missing colon after type.\n");
+        return CLI_FAILURE;
+    }
+    *first_colon = '\0'; 
 
-    *end_key = '\0';
-    const unsigned char *key = (const unsigned char*)argument;
-    
-    *end_type = '\0';
-    char *str_type = end_key + 1;
-
-    const char *data = end_type + 1;
-
-    int datatype = stodatatype(str_type);
+    data_str = first_colon + 1;
 
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_add: String parsed successfully, infered type -> '%s'.\n", str_type);
+        printf("[DEBUG] cmd_add: Parsed: Key='%s', Type='%s', Data='%s'\n", key_str, type_str, data_str);
     #endif
+
+    const unsigned char *key = (const unsigned char*)key_str;
+    DataTypes datatype = stodatatype(type_str);
+
+    #if DEBUG_MODE
+        printf("[DEBUG] cmd_add: Inferred type ID for '%s'.\n", type_str);
+    #endif
+
+    int error_db;
 
     switch (datatype) {
         case STR: { 
-            int error = db_set(key, data, sizeof(data));
-            if (error != DB_SUCCESS) {
+            error_db = db_set(key, data_str, strlen(data_str) + 1);
+            if (error_db != DB_SUCCESS) {
+                fprintf(stderr, "[ERROR] cmd_add: Failed to set string value in database for key '%s'.\n", key_str);
                 return CLI_FAILURE;
             }
+
+            break;            
         }
         
         case INT: {
+            char *endptr_int;
+            long data_long = strtol(data_str, &endptr_int, 10); // Use strtol for better error checking
 
-            int data_int = atoi(data);
-            int error = db_set(key, &data_int, sizeof(int));
-            if (error != DB_SUCCESS) {
+            if (endptr_int == data_str) {
+                fprintf(stderr, "[ERROR] cmd_add: Invalid integer format for '%s'. No digits found.\n", data_str);
                 return CLI_FAILURE;
             }
+            while (*endptr_int != '\0' && isspace((unsigned char)*endptr_int)) {
+                endptr_int++;
+            }
+            if (*endptr_int != '\0') {
+                fprintf(stderr, "[ERROR] cmd_add: Invalid characters ('%s') found after integer in '%s'.\n", endptr_int, data_str);
+                return CLI_FAILURE;
+            }
+            if ((data_long == LONG_MAX || data_long == LONG_MIN) || data_long > INT_MAX || data_long < INT_MIN) {
+                fprintf(stderr, "[ERROR] cmd_add: Integer value '%s' is out of range for type int.\n", data_str);
+                return CLI_FAILURE;
+            }
+            
+            int data_int = (int)data_long;
+            error_db = db_set(key, &data_int, sizeof(int));
+            if (error_db != DB_SUCCESS) {
+                fprintf(stderr, "[ERROR] cmd_add: Failed to set int value in database for key '%s'.\n", key_str);
+                return CLI_FAILURE;
+            }
+
+            break;
         }
 
         case HEX: {
-            char *endptr; 
-            unsigned long converted_value;
+            char *endptr_hex;
+            unsigned long converted_value = strtoul(data_str, &endptr_hex, 16);
 
-            converted_value = strtoul(data, &endptr, 16);
-
-            if ((converted_value == LONG_MAX) || (converted_value == LONG_MIN)) {
-                fprintf(stderr, "[ERROR] cmd_add: The value '%s' is outside the range for unsigned long.\n", data);
+            if (converted_value == ULONG_MAX) {
+                fprintf(stderr, "[ERROR] cmd_add: Hex value '%s' is too large (overflow) for unsigned long.\n", data_str);
                 return CLI_FAILURE;
             }
 
-            if (endptr == data) {
-                fprintf(stderr, "[ERROR] cmd_add: Unvalid hexidecimal format for '%s'.\n", data);
+            if (endptr_hex == data_str) {
+                fprintf(stderr, "[ERROR] cmd_add: Invalid hexadecimal format for '%s'. No valid hex digits found.\n", data_str);
                 return CLI_FAILURE;
             }
 
-            char *checkptr = endptr;
-
+            char *checkptr = endptr_hex;
             while (*checkptr != '\0' && isspace((unsigned char)*checkptr)) {
                 checkptr++;
             }
-
             if (*checkptr != '\0') {
-                fprintf(stderr, "[ERROR] cmd_add: Unvalid characters ('%s') found in the hexidecimal number -> '%s'.\n", endptr, data);
+                fprintf(stderr, "[ERROR] cmd_add: Invalid characters ('%s') found after hexadecimal number in '%s'.\n", checkptr, data_str);
                 return CLI_FAILURE;
             }
 
-            endptr = NULL;
-            checkptr = NULL;
-
-            int error = db_set(key, &converted_value, sizeof(converted_value));
-            if (error != DB_SUCCESS) {
+            error_db = db_set(key, &converted_value, sizeof(converted_value));
+            if (error_db != DB_SUCCESS) {
+                fprintf(stderr, "[ERROR] cmd_add: Failed to set hex value in database for key '%s'.\n", key_str);
                 return CLI_FAILURE;
             }
-
-                        
-            return CLI_SUCCESS;
+            break;  
         }
 
         case FILENAME: {
-            FILE *file_ptr = fopen(data, "r");
-            
-            if (file_ptr == NULL) {
-                fprintf(stderr, "[ERROR] cmd_add: '%s' doesnt'exist or is not readable.\n", data);
+            error_db = db_set(key, data_str, strlen(data_str) + 1);
+            if (error_db != DB_SUCCESS) {
+                fprintf(stderr, "[ERROR] cmd_add: Failed to set filename value in database for key '%s'.\n", key_str);
                 return CLI_FAILURE;
             }
-            
-            int error = db_set(key, file_ptr, sizeof(*file_ptr));
-            if (error != DB_SUCCESS) {
-                return CLI_FAILURE;
-            }
-            
-            #if DEGUB_MODE
-                printf("[DEBUG] cmd_add: ")
+            #if DEBUG_MODE
+                printf("[DEBUG] cmd_add: Stored filename '%s' for key '%s'.\n", data_str, key_str);
             #endif
+            break; // Added break
+        }
+
+        case DATATYPE_UNKNOWN:
+        default: {
+            fprintf(stderr, "[ERROR] cmd_add: Please use a known datatype annotation! And remember is case-sensitive.\n");
+            return CLI_FAILURE;
         }
     }
 
-    int error = 0;
+    #if DEBUG_MODE
+        printf("[DEBUG] cmd_add: Successfully processed ADD command for key '%s'.\n", key_str);
+    #endif
 
     return CLI_SUCCESS;
 }
@@ -444,19 +484,19 @@ int cmd_init(void) {
 }
 
 void process_command(char *line) {
-    #if DEGUB_MODE
+    #if DEBUG_MODE
         printf("[DEBUG] process_command: Starting line parsing...\n");
     #endif
 
     char *saveptr;
-    char *command_str = strtok_r(line, " ", &saveptr);
+    char *command_str = __strtok_r(line, " ", &saveptr);
     
     if (command_str == NULL) return;
 
     CommandType command = stocommand(command_str);
-    char *command_argument = strtok_r(NULL, "", &saveptr); 
+    char *command_argument = __strtok_r(NULL, "", &saveptr); 
 
-    #if DEGUB_MODE
+    #if DEBUG_MODE
         printf("[DEBUG] process_command: Line parsing finisched!\n");
         printf("[DEBUG] process_command: Starting command redirection...\n");
     #endif   
@@ -569,7 +609,7 @@ void process_command(char *line) {
         }
     }
 
-    #if DEGUB_MODE
+    #if DEBUG_MODE
         printf("[DEBUG] process_command: Command redirection finished!\n");
     #endif
 }
