@@ -13,6 +13,16 @@ A basic key-value database implemented in C. It stores data in memory using a ha
 
 ## Building
 
-1. Requires a C compiler that supports c23 (like GCC). Compile all `.c` files together.
-2. Make the compiled file an executable (ex: chmod +x <filename>).
-3. Run the executable!
+When we talk about building this project we have mainly two ways of doing that, the first is for tester/developer only, the second for regular users.
+
+
+### First Method:
+    1. Requires a C compiler that supports c23 (like GCC). *RUN the build.sh* script.
+    2. Make the compiled file an executable (ex: chmod +x <filename>).
+    3. Run the executable or put it in a debugger like gdb.
+
+
+### Second Method:
+    1. Requires a C compiler that supports c23 (like GCC). Compile all `.c` files together.
+    2. Make the compiled file an executable (ex: chmod +x <filename>).
+    3. Run the executable!
