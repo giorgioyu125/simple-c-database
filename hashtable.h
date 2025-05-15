@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "string_functionality.h"
+#include "hashing_functions.h"
 
 // Table Parameters
 
@@ -25,7 +27,6 @@
 
 #define DEBUG_MODE 1
 
-
 // Data
 
 typedef struct Node{
@@ -37,49 +38,7 @@ typedef struct Node{
 
 Node **hashTable = NULL;
 
-// Strings functionality
-
-unsigned char *ustrdup(const unsigned char *src) {
-    if (src == NULL) {
-        return NULL;
-    }
-
-    size_t len = strlen((const char *)src);
-    unsigned char *dest = (unsigned char *)malloc((len + 1) * sizeof(unsigned char));
-
-    if (dest == NULL) {
-        return NULL;
-    }
-
-    memcpy(dest, src, len + 1);
-    return dest;
-}
-
-int ustrcmp(const unsigned char* s1, const unsigned char* s2) {
-    while (*s1 != '\0' && *s1 == *s2) {
-        s1++;
-        s2++;
-    }
-    return (int)(*s1) - (int)(*s2);
-}
-
-
-// Hashing functionality
-
-unsigned long hash(const unsigned char *str) {
-    unsigned long hash = 5381;
-    unsigned long c;
-    
-    while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c; 
-    }
-
-    return hash;
-}
-
-
-// DataBase functionality
-
+// Hashtable linear functionality
 
 int db_delete(const unsigned char* key) {
     if (key == NULL) {
@@ -88,11 +47,11 @@ int db_delete(const unsigned char* key) {
     }
 
     if (hashTable == NULL) {
-        fprintf(stderr, "[ERROR] db_get: Database is not initialized.\n");
+        fprintf(stderr, "[ERROR] db_delete: Database is not initialized.\n");
         return DB_FAILURE;
     }
 
-    const unsigned long index = (hash(key)) & (TABLE_SIZE - 1);
+    const unsigned long index = hash(key) % TABLE_SIZE;
 
     Node* current = hashTable[index];
     Node* previous = NULL;
@@ -141,7 +100,7 @@ void* db_get(const unsigned char* key, size_t* out_value_size) {
         return NULL;
     }
 
-    const unsigned long index = (hash(key)) & (TABLE_SIZE - 1);
+    const unsigned long index = hash(key) % TABLE_SIZE;
 
     Node* current = hashTable[index];
     
@@ -178,7 +137,7 @@ bool db_exist(const unsigned char* key) {
         return false; 
     }
 
-    const unsigned long index = (hash(key) & (TABLE_SIZE - 1));
+    const unsigned long index = hash(key) % TABLE_SIZE;
 
     Node* current = hashTable[index];
     #if DEBUG_MODE
@@ -198,7 +157,7 @@ bool db_exist(const unsigned char* key) {
             return true; 
         }
 
-        current = current->next;
+    current = current->next;
     }
 
     #if DEBUG_MODE
@@ -224,12 +183,12 @@ int db_set(const unsigned char* key, const void* value_ptr, size_t value_size) {
         return DB_FAILURE;
     }
     
-    if (value_ptr == NULL){
+    if (value_ptr == NULL) {
         fprintf(stderr, "[ERROR] db_set: value_ptr cannot be NULL in any case\n");
         return DB_FAILURE;
     }
 
-    const unsigned long index = (hash(key)) & (TABLE_SIZE - 1);
+    const unsigned long index = (hash(key)) % TABLE_SIZE;
     #if DEBUG_MODE
         printf("[DEBUG] db_set: key = %s, value = %p, value_size = %zu, accessing to: hashTable[%lu]", key, value_ptr, value_size, index);
     #endif
@@ -237,7 +196,7 @@ int db_set(const unsigned char* key, const void* value_ptr, size_t value_size) {
     Node* current = hashTable[index];
     while (current != NULL) {
 
-        if (ustrcmp(current->key, key) == 0){
+        if (ustrcmp(current->key, key) == 0) {
 
             #if DEBUG_MODE
                 printf("[DEBUG] db_set: Key '%s' found in the index %lu. Updating the value.\n", key, index);
@@ -245,7 +204,7 @@ int db_set(const unsigned char* key, const void* value_ptr, size_t value_size) {
             
             void *new_value = malloc(value_size);
 
-            if (new_value == NULL){
+            if (new_value == NULL) {
                 fprintf(stderr, "[ERROR] db_set : Allocation failed.");
                 return DB_MEM_ERROR;
             }
