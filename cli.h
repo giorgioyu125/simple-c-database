@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "key-value_db.h"
+#include "hashtable.h"
+#include "hashset.h"
 
 // Debug Mode
 
@@ -40,37 +41,49 @@ typedef enum {
 
 
 typedef enum {
-    CMD_ADD,
-    CMD_SET,
-    CMD_GET,
-    CMD_DEL,
-    CMD_LIST_KEYS,
-    CMD_COUNT,
-    CMD_SAVE,
-    CMD_LOAD,
-    CMD_RESET,
-    CMD_HELP,
-    CMD_EXIT,
-    CMD_QUIT,
+    CMD_SET_ADD,
+    CMD_SET_SET,
+    CMD_SET_GET,
+    CMD_SET_DEL,
+    CMD_SET_LIST_KEYS,
+    CMD_SET_COUNT,
+    CMD_SET_SAVE,
+    CMD_SET_LOAD,
+    CMD_SET_RESET,
+    CMD_SET_HELP,
+    CMD_SET_EXIT,
+    CMD_SET_QUIT,
+    CMD_TABLE_ADD,
+    CMD_TABLE_SET,
+    CMD_TABLE_GET,
+    CMD_TABLE_DEL,
+    CMD_TABLE_LIST_KEYS,
+    CMD_TABLE_COUNT,
+    CMD_TABLE_SAVE,
+    CMD_TABLE_LOAD,
+    CMD_TABLE_RESET,
+    CMD_TABLE_HELP,
+    CMD_TABLE_EXIT,
+    CMD_TABLE_QUIT,
     CMD_INIT,
     CMD_UNKNOWN 
 } CommandType;
 
 // CLI functionality
 
-CommandType stocommand(const char *command_str) {
+CommandType stocommand(const char* command_str, const char* db_type) {
     if (command_str == NULL) return CMD_UNKNOWN;
 
-    if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_ADD;
-    if (strcmp(command_str, "GET") == 0) return CMD_GET;
-    if (strcmp(command_str, "DEL") == 0) return CMD_DEL;
-    if (strcmp(command_str, "LIST-KEYS") == 0) return CMD_LIST_KEYS;
-    if (strcmp(command_str, "COUNT") == 0) return CMD_COUNT;
-    if (strcmp(command_str, "SAVE") == 0) return CMD_SAVE;
-    if (strcmp(command_str, "LOAD") == 0) return CMD_LOAD;
-    if (strcmp(command_str, "RESET") == 0) return CMD_RESET;
-    if (strcmp(command_str, "HELP") == 0) return CMD_HELP;
-    if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_EXIT; 
+    if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_TABLE_ADD;
+    if (strcmp(command_str, "GET") == 0) return CMD_TABLE_GET;
+    if (strcmp(command_str, "DEL") == 0) return CMD_TABLE_DEL;
+    if (strcmp(command_str, "LIST-KEYS") == 0) return CMD_TABLE_LIST_KEYS;
+    if (strcmp(command_str, "COUNT") == 0) return CMD_TABLE_COUNT;
+    if (strcmp(command_str, "SAVE") == 0) return CMD_TABLE_SAVE;
+    if (strcmp(command_str, "LOAD") == 0) return CMD_TABLE_LOAD;
+    if (strcmp(command_str, "RESET") == 0) return CMD_TABLE_RESET;
+    if (strcmp(command_str, "HELP") == 0) return CMD_TABLE_HELP;
+    if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT; 
     if (strcmp(command_str, "INIT") == 0) return CMD_INIT; 
     return CMD_UNKNOWN;
 }
@@ -467,13 +480,21 @@ int cmd_exit(void){
     return CLI_SUCCESS;
 }
 
-int cmd_init(void) {
+int cmd_init(const unsigned char* db_type) {
     if (hashTable != NULL) {
         fprintf(stderr, "[ERROR] cmd_init: Database is already initialized.\n");
         return CLI_FAILURE;
     }
+
+    if (ustrcmp(db_type, "TABLE") == 0) {
+        int error = init_db();
+    }
+
+    if (ustrcmp(db_type, "SET") == 0) {
+        int error = set_init();
+    }
     
-    int error = init_db();
+    int error = DB_FAILURE;
 
     if (error != DB_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_exit: An error occured while destroying the database.\n");
@@ -502,8 +523,8 @@ void process_command(char *line) {
     #endif   
 
     switch (command) {
-        case CMD_SET:
-        case CMD_ADD: {
+        case CMD_TABLE_SET:
+        case CMD_TABLE_ADD: {
             int error = cmd_add(command_argument);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -512,7 +533,7 @@ void process_command(char *line) {
             return;
         }
         
-        case CMD_GET: {
+        case CMD_TABLE_GET: {
             int error = cmd_get((const unsigned char*)command_argument);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -521,7 +542,7 @@ void process_command(char *line) {
             return;
         }          
         
-        case CMD_DEL: {
+        case CMD_TABLE_DEL: {
             int error = cmd_del((const unsigned char*)command_argument);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -530,7 +551,7 @@ void process_command(char *line) {
             return;
         }
 
-        case CMD_LIST_KEYS: {
+        case CMD_TABLE_LIST_KEYS: {
             int error = cmd_list_keys();
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -539,7 +560,7 @@ void process_command(char *line) {
             return;
         }
 
-        case CMD_COUNT: {
+        case CMD_TABLE_COUNT: {
             int error = cmd_count();
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -548,7 +569,7 @@ void process_command(char *line) {
             return;
         }
 
-        case CMD_SAVE: {
+        case CMD_TABLE_SAVE: {
             int error = cmd_save(command_argument);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -557,7 +578,7 @@ void process_command(char *line) {
             return;
         }
 
-        case CMD_LOAD: {
+        case CMD_TABLE_LOAD: {
             int error = cmd_load(command_argument);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -566,7 +587,7 @@ void process_command(char *line) {
             return;
         }
 
-        case CMD_RESET: {
+        case CMD_TABLE_RESET: {
             int error = cmd_reset();
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -575,7 +596,7 @@ void process_command(char *line) {
             return;
         }
 
-        case CMD_HELP: {
+        case CMD_TABLE_HELP: {
             int error = cmd_help();
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
@@ -584,7 +605,7 @@ void process_command(char *line) {
             return;
         }
         
-        case CMD_QUIT:
+        case CMD_TABLE_QUIT:
         case CMD_EXIT: {
             int error = cmd_exit();
             if (error != CLI_SUCCESS) {
@@ -594,7 +615,7 @@ void process_command(char *line) {
             return;
         }
 
-        case CMD_INIT: {
+        case CMD_TABLE_INIT: {
             int error = cmd_init();
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_add: There was an error while executing the insertion of a new value.\n");
