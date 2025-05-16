@@ -1,22 +1,41 @@
 // CLI_H
-#include "cli.h"   
+#include "cli.h" 
+
+extern Node** hashTable = NULL;
+extern HashSet hashSet;
 
 // CLI functionality
 
 CommandType stocommand(const char* command_str, const char* db_type) {
     if (command_str == NULL) return CMD_UNKNOWN;
+    if (strcmp(db_type, "TABLE") == 0) {
+        if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_TABLE_ADD;
+        if (strcmp(command_str, "GET") == 0) return CMD_TABLE_GET;
+        if (strcmp(command_str, "DEL") == 0) return CMD_TABLE_DEL;
+        if (strcmp(command_str, "LIST-KEYS") == 0) return CMD_TABLE_LIST_KEYS;
+        if (strcmp(command_str, "COUNT") == 0) return CMD_TABLE_COUNT;
+        if (strcmp(command_str, "SAVE") == 0) return CMD_TABLE_SAVE;
+        if (strcmp(command_str, "LOAD") == 0) return CMD_TABLE_LOAD;
+        if (strcmp(command_str, "RESET") == 0) return CMD_TABLE_RESET;
+        if (strcmp(command_str, "HELP") == 0) return CMD_TABLE_HELP;
+        if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT;
+        if (strcmp(command_str, "INIT") == 0) return CMD_INIT;
+    }
 
-    if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_TABLE_ADD;
-    if (strcmp(command_str, "GET") == 0) return CMD_TABLE_GET;
-    if (strcmp(command_str, "DEL") == 0) return CMD_TABLE_DEL;
-    if (strcmp(command_str, "LIST-KEYS") == 0) return CMD_TABLE_LIST_KEYS;
-    if (strcmp(command_str, "COUNT") == 0) return CMD_TABLE_COUNT;
-    if (strcmp(command_str, "SAVE") == 0) return CMD_TABLE_SAVE;
-    if (strcmp(command_str, "LOAD") == 0) return CMD_TABLE_LOAD;
-    if (strcmp(command_str, "RESET") == 0) return CMD_TABLE_RESET;
-    if (strcmp(command_str, "HELP") == 0) return CMD_TABLE_HELP;
-    if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT;
-    if (strcmp(command_str, "INIT") == 0) return CMD_INIT; 
+    if (strcmp(db_type, "SET") == 0) {
+        if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_SET_ADD;
+        if (strcmp(command_str, "GET") == 0) return CMD_SET_GET;
+        if (strcmp(command_str, "DEL") == 0) return CMD_SET_DEL;
+        if (strcmp(command_str, "LIST-KEYS") == 0) return CMD_SET_LIST_KEYS;
+        if (strcmp(command_str, "COUNT") == 0) return CMD_SET_COUNT;
+        if (strcmp(command_str, "SAVE") == 0) return CMD_SET_SAVE;
+        if (strcmp(command_str, "LOAD") == 0) return CMD_SET_LOAD;
+        if (strcmp(command_str, "RESET") == 0) return CMD_SET_RESET;
+        if (strcmp(command_str, "HELP") == 0) return CMD_SET_HELP;
+        if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_SET_EXIT;
+        if (strcmp(command_str, "INIT") == 0) return CMD_INIT;
+    }
+
     return CMD_UNKNOWN;
 }
 

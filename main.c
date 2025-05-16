@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
-#include "cli.h"
+#include "cli.c"
 
 // Defines
 

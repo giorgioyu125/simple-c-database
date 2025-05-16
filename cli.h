@@ -12,6 +12,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "hashtable.h"
+#include "hashset.h"
 #include "hashing_functionality.h"
 #include "string_functionality.h"
 
