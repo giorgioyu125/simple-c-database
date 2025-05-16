@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include "string_functionality.h"
 #include "hashing_functions.h"
+#include "hashtable.h"
 
 // Table Parameters
 
@@ -29,14 +30,7 @@
 
 // Data
 
-typedef struct Node{
-    unsigned char *key;
-    void *value;
-    size_t value_size;
-    struct Node *next;
-} Node;
-
-Node **hashTable = NULL;
+Node** hashTable = NULL;
 
 // Hashtable linear functionality
 
@@ -49,7 +43,7 @@ int db_delete(const unsigned char* key) {
     if (hashTable == NULL) {
         fprintf(stderr, "[ERROR] db_delete: Database is not initialized.\n");
         return DB_FAILURE;
-    }
+}
 
     const unsigned long index = hash(key) % TABLE_SIZE;
 
@@ -300,7 +294,7 @@ int destroy_db(void){
 }
 
 
-int init_db(void){
+int init_db(void) {
     if (hashTable != NULL){
         #if DEBUG_MODE
             fprintf(stderr, "[ERROR] init_db: Database already initialized.\n");
@@ -326,7 +320,7 @@ int init_db(void){
     return DB_SUCCESS;
 }
 
-int db_save(const char *filename) {
+int db_save(const char* filename) {
 #if DEBUG_MODE
     printf("[DEBUG] db_save: Attempting to save database to '%s'.\n", filename);
 #endif

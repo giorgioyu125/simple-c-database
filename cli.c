@@ -1,74 +1,5 @@
-// Includes
-
-#define _POSIX_C_SOURCE 200809L
-#include <limits.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include "hashtable.c"
-#include "hashtable.c"
-#include "hashset.c"
-    
-// Debug Mode
-
-#define DEGUB_MODE 0
-
-// Error handling
-
-#define CLI_SUCCESS 0
-#define DB_SUCCESS 0
-#define DB_FAILURE -1       
-#define DB_KEY_NOT_FOUND -2
-#define DB_MEM_ERROR -3     
-#define DB_KEY_EXISTS -4   
-#define DB_FILE_CORRUPT -5
-#define DB_FILE_ERROR -6
-#define CLI_FAILURE -7
-
-// Data
-
-#define TABLE_SIZE 4096
-
-typedef enum {
-    STR,
-    INT,
-    HEX,
-    FILENAME,
-    DATATYPE_UNKNOWN
-} DataTypes;
-
-
-typedef enum {
-    CMD_SET_ADD,
-    CMD_SET_SET,
-    CMD_SET_GET,
-    CMD_SET_DEL,
-    CMD_SET_LIST_KEYS,
-    CMD_SET_COUNT,
-    CMD_SET_SAVE,
-    CMD_SET_LOAD,
-    CMD_SET_RESET,
-    CMD_SET_HELP,
-    CMD_SET_EXIT,
-    CMD_SET_QUIT,
-    CMD_TABLE_ADD,
-    CMD_TABLE_SET,
-    CMD_TABLE_GET,
-    CMD_TABLE_DEL,
-    CMD_TABLE_LIST_KEYS,
-    CMD_TABLE_COUNT,
-    CMD_TABLE_SAVE,
-    CMD_TABLE_LOAD,
-    CMD_TABLE_RESET,
-    CMD_TABLE_HELP,
-    CMD_TABLE_EXIT,
-    CMD_TABLE_QUIT,
-    CMD_INIT,
-    CMD_UNKNOWN 
-} CommandType;
+// CLI_H
+#include "cli.h"   
 
 // CLI functionality
 
@@ -84,7 +15,7 @@ CommandType stocommand(const char* command_str, const char* db_type) {
     if (strcmp(command_str, "LOAD") == 0) return CMD_TABLE_LOAD;
     if (strcmp(command_str, "RESET") == 0) return CMD_TABLE_RESET;
     if (strcmp(command_str, "HELP") == 0) return CMD_TABLE_HELP;
-    if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT; 
+    if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT;
     if (strcmp(command_str, "INIT") == 0) return CMD_INIT; 
     return CMD_UNKNOWN;
 }
@@ -100,7 +31,7 @@ DataTypes stodatatype(const char *datatype_str) {
     return DATATYPE_UNKNOWN;
 }
 
-int cmd_table_add(char *argument){
+int cmd_table_add(char *argument) {
     char *key_str;
     char *type_str;
     char *data_str;
@@ -248,7 +179,6 @@ int cmd_table_add(char *argument){
 
 
 int cmd_table_get(const unsigned char *argument) {
-
     if (argument == NULL || *argument == '\0') {
         fprintf(stderr, "[ERROR] cmd_table_get: GET command requires a non-empty key.\n");
         return CLI_FAILURE;
@@ -372,7 +302,7 @@ int cmd_table_save(const char *argument) {
     return CLI_SUCCESS;
 }
 
-int cmd_table_load(const char *argument){
+int cmd_table_load(const char *argument) {
     if (argument == NULL || *argument == '\0') {
         fprintf(stderr, "[ERROR] cmd_table_load: LOAD command requires a non-empty filename.\n");
         return CLI_FAILURE;
@@ -393,7 +323,7 @@ int cmd_table_load(const char *argument){
     return CLI_SUCCESS;
 }
 
-int cmd_table_reset(void){
+int cmd_table_reset(void) {
     if (hashTable == NULL) {
         fprintf(stderr, "[ERROR] cmd_table_reset: Database not initialized.\n");
         return CLI_FAILURE;
@@ -414,7 +344,7 @@ int cmd_table_reset(void){
     return CLI_SUCCESS;
 }
 
-int cmd_help(void){
+int cmd_help(void) {
     printf("\n--- Simple C Database Help ---\n");
     printf("Available commands (case-sensitive):\n\n");
 
@@ -465,7 +395,7 @@ int cmd_help(void){
     return CLI_SUCCESS;
 }
  
-int cmd_exit(void){
+int cmd_exit(void) {
     if (hashTable == NULL) {
         fprintf(stderr, "[ERROR] cmd_exit: Database not initialized.\n");
         return CLI_FAILURE;

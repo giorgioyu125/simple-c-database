@@ -1,7 +1,6 @@
 // Includes
 
-#include <cstdint>
-#include <cstdlib>
+#include <stdint.h>
 #include <limits.h>
 #include <stdio.h>
 #include <dirent.h>
@@ -9,6 +8,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <uv.h>
+#include "cli.h"
 #include "string_functionality.h"
 #include "hashing_functions.h"
 
@@ -32,18 +32,6 @@
 #define DEBUG_MODE 1
 
 // Data
-
-typedef struct Node{
-    unsigned char *key;
-    Node* next;
-} Node;
-
-typedef struct HashSet {
-    Node** buckets;
-    size_t capacity;
-    size_t count;    
-    uv_mutex_t mutex;
-} HashSet;
 
 HashSet* hashset = NULL;
 
@@ -293,7 +281,7 @@ int set_delete(unsigned char* key) {
 
             if (current->key != NULL) {
                 #if DEBUG_MODE
-                    printf("[DEBUG] set_delete: Freeing key for node being deleted: '%s'.\n", (const char*)current->key);
+                   printf("[DEBUG] set_delete: Freeing key for node being deleted: '%s'.\n", (const char*)current->key);
                 #endif
 
                 free(current->key); 
@@ -464,7 +452,7 @@ write_error:
     return DB_FAILURE;
 }
 
-int set_load(const char *filename) {
+int set_load(const char* filename) {
     if (hashset == NULL) {
         return DB_FAILURE;
     }
