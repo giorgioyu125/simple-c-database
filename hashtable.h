@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "string_functionality.h"
-#include "hashing_functions.h"
+#include "hashing_functionality.h"
 
 // Defines
 

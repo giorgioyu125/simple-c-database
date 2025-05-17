@@ -34,8 +34,8 @@
     #define DB_FILE_ERROR -6
     #define CLI_FAILURE -7
 
-    // Table
-
+    // Table/Set
+    
     #define TABLE_SIZE 4096
 
 // Data
@@ -82,17 +82,22 @@ typedef enum {
 
 CommandType stocommand(const char* command_str, const char* db_type);
 DataTypes stodatatype(const char *datatype_str);
-int cmd_table_add(char *argument);
-int cmd_table_get(const unsigned char *argument);
-int cmd_table_del(const unsigned char *argument);
-int cmd_table_list_keys(void);
-int cmd_table_count(void);
-int cmd_table_save(const char *argument);
-int cmd_table_load(const char *argument);
-int cmd_table_reset(void);
-int cmd_help(void);
-int cmd_exit(void);
-int cmd_init(const unsigned char* db_type);
-void process_command(char *line);
+
+    // Set
+    
+
+    // Table
+    int cmd_table_add(char *argument);
+    int cmd_table_get(const unsigned char *argument);
+    int cmd_table_del(const unsigned char *argument);
+    int cmd_table_list_keys(void);
+    int cmd_table_count(void);
+    int cmd_table_save(const char *argument);
+    int cmd_table_load(const char *argument);
+    int cmd_table_reset(void);
+    int cmd_help(void);
+    int cmd_exit(void);
+    int cmd_init(char* db_type);
+    void process_command(char *line);
 
 #endif

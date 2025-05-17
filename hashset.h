@@ -13,7 +13,7 @@
 #include <stdbool.h>
 #include <uv.h>
 #include "string_functionality.h"
-#include "hashing_functions.h"
+#include "hashing_functionality.h"
 
 // Defines
 
@@ -38,13 +38,13 @@
 
 // Data
 
-typedef struct Node{
+typedef struct Cell{
     unsigned char *key;
-    struct Node* next;
-} Node;
+    struct Cell* next;
+} Cell;
 
 typedef struct HashSet {
-    Node** buckets;
+    Cell** buckets;
     size_t capacity;
     size_t count;    
     uv_mutex_t mutex;

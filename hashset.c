@@ -37,7 +37,7 @@ HashSet* hashset = NULL;
 
 // Hashset functionality
 
-int set_init(const unsigned int capacity) {
+int set_init(const size_t capacity) {
     #if DEBUG_MODE
         printf("[DEBUG] set_init: Starting Hashset allocation.\n");
     #endif
@@ -59,7 +59,7 @@ int set_init(const unsigned int capacity) {
         printf("[DEBUG] set_init: Hashset allocation completed, starting buckets in Hashset allocation.\n");
     #endif
 
-    hashset->buckets = (Node**)calloc(hashset->capacity, sizeof(Node*));
+    hashset->buckets = (Cell**)calloc(hashset->capacity, sizeof(Cell*));
     if (hashset->buckets == NULL) {
         fprintf(stderr, "[ERROR] set_init: Impossibile to initialize buckets.\n");
         free(hashset);
@@ -91,11 +91,11 @@ int set_destroy(void) {
         #endif
 
         for (size_t i = 0; i < hashset->capacity; ++i) {
-            Node* current_node = hashset->buckets[i];
+            Cell* current_node = hashset->buckets[i];
 
             while (current_node != NULL) {
 
-                Node* target = current_node;
+                Cell* target = current_node;
                 current_node = current_node->next; 
 
                 if (target->key != NULL) {
@@ -193,7 +193,7 @@ int set_add(unsigned char* key) {
         printf("[DEBUG] set_add: key = %s, accessing to: hashset[%lu]", key, index);
     #endif
 
-    Node* current = hashset->buckets[index];
+    Cell* current = hashset->buckets[index];
     while (current != NULL) {
 
         if (ustrcmp(current->key, key) == 0) {
@@ -207,7 +207,7 @@ int set_add(unsigned char* key) {
         current = current->next;
     }
 
-    Node* new_node = (Node*)malloc(sizeof(Node));
+    Cell* new_node = (Cell*)malloc(sizeof(Cell));
     if (new_node == NULL) {
         fprintf(stderr, "[ERROR] set_add: Allocation failed!\n");
 
@@ -261,8 +261,8 @@ int set_delete(unsigned char* key) {
         printf("[DEBUG] set_delete: Calculated index for key '%s' is %lu.\n", (const char*)key, index);
     #endif
 
-    Node* current = hashset->buckets[index];
-    Node* prev = NULL;
+    Cell* current = hashset->buckets[index];
+    Cell* prev = NULL;
 
     while (current != NULL) {
         if (ustrcmp(current->key, key) == 0) {
@@ -362,7 +362,7 @@ int set_save(const char* filename) {
     uv_mutex_lock(&hashset->mutex);
 
     for (size_t i = 0; i < hashset->capacity; i++) {
-        Node *current = hashset->buckets[i];
+        Cell *current = hashset->buckets[i];
         #if DEBUG_MODE
             if (current != NULL) {
                 printf("[DEBUG] set_save: Processing bucket %zu.\n", i);
@@ -563,7 +563,7 @@ bool set_exist(const unsigned char* key, int* out_error_value) {
     #endif
     
     int address_pos = 0;
-    Node* current = hashset->buckets[index];
+    Cell* current = hashset->buckets[index];
 
     while (current != NULL) {
         #if DEBUG_MODE 
