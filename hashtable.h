@@ -47,7 +47,7 @@ void* db_get(const unsigned char* key, size_t* out_value_size);
 bool db_exist(const unsigned char* key);
 int db_set(const unsigned char* key, const void* value_ptr, size_t value_size);
 int destroy_db(void);
-int init_db(void);
+int init_db(size_t db_size);
 int db_save(const char* filename);
 int db_load(const char* filename);
 

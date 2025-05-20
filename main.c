@@ -6,11 +6,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
-#include "cli.c"
+#include "cli.h"
 
-// Defines
+// Constants
 
 #define MAX_LINE_SIZE 1024
+size_t db_size = 0;
+char* db_type = NULL;
 
 // Data
 
@@ -18,6 +20,14 @@
 // Functionality
 
 int read_line(char* buffer, int buffer_size) {
+    if (buffer == NULL) {
+        #if DEBUG_MODE
+            printf("[ERROR] read_line: buffer is null.\n");
+        #endif
+
+        return EXIT_FAILURE;
+    }
+
     if (fgets(buffer, buffer_size, stdin) == NULL) {
         buffer[0] = '\0';
         return EXIT_FAILURE;
@@ -28,9 +38,13 @@ int read_line(char* buffer, int buffer_size) {
     return EXIT_SUCCESS;
 }
 
-
 int main(void) {
     char line[MAX_LINE_SIZE] = {0};
+    time_t now = time(NULL);
+    char time_str[100];
+    strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    printf("Simple C Database - Started at %s\n", time_str);
+    printf("Listening for commands... (Type 'HELP')\n");
     printf("Simple Key-Value DB Input (type 'quit' to exit)\n");
 
     while (true) {       
@@ -51,7 +65,7 @@ int main(void) {
             }
         }
         
-        process_command(line);
+        process_command(line, db_type, db_size);
 
         memset(line, 0, sizeof(line));
     }

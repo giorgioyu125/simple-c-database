@@ -17,6 +17,10 @@
 #include "string_functionality.h"
 
 // Defines
+    
+    // OS
+
+    #define MAX_FILENAME_LENGHT 260
 
     // Debug Mode
 
@@ -25,18 +29,11 @@
     // Error handling
 
     #define CLI_SUCCESS 0
-    #define DB_SUCCESS 0
-    #define DB_FAILURE -1       
-    #define DB_KEY_NOT_FOUND -2
-    #define DB_MEM_ERROR -3     
-    #define DB_KEY_EXISTS -4   
-    #define DB_FILE_CORRUPT -5
-    #define DB_FILE_ERROR -6
-    #define CLI_FAILURE -7
+    #define CLI_FAILURE -1
 
     // Table/Set
     
-    #define TABLE_SIZE 4096
+    #define TABLE_SIZE 4096 // Update this to globabl constant of init function
 
 // Data
 
@@ -58,8 +55,8 @@ typedef enum {
     CMD_SET_COUNT,
     CMD_SET_SAVE,
     CMD_SET_LOAD,
-    CMD_SET_RESET,
     CMD_SET_HELP,
+    CMD_SET_RESET,
     CMD_SET_EXIT,
     CMD_SET_QUIT,
     CMD_TABLE_ADD,
@@ -80,24 +77,36 @@ typedef enum {
 
 // public API (function prototypes)
 
-CommandType stocommand(const char* command_str, const char* db_type);
-DataTypes stodatatype(const char *datatype_str);
+
+
+    // Helper functions
+    CommandType stocommand(const char* command_str, const char* db_type);
+    DataTypes stodatatype(const char* datatype_str);
+    int process_command(char* line, char* db_type, size_t db_size);
 
     // Set
-    
+    int cmd_set_add(char* argument);
+    int cmd_set_exist(char* argument, bool* existence);
+    int cmd_set_del(char* argument);
+    int cmd_set_list_keys(const char* db_type);
+    size_t cmd_set_count(char* db_type);
+    int cmd_set_save(char* argument);
+    int cmd_set_load(char* argument);
+    int cmd_set_reset(char* argument, char* db_type, size_t db_size);
+    int cmd_set_exit(void);
+    int cmd_set_help(void);
 
     // Table
     int cmd_table_add(char *argument);
     int cmd_table_get(const unsigned char *argument);
     int cmd_table_del(const unsigned char *argument);
-    int cmd_table_list_keys(void);
-    int cmd_table_count(void);
+    int cmd_table_list_keys(size_t db_size);
+    int cmd_table_count(size_t db_size);
     int cmd_table_save(const char *argument);
     int cmd_table_load(const char *argument);
-    int cmd_table_reset(void);
+    int cmd_table_reset(char* db_type, size_t db_size);
     int cmd_help(void);
     int cmd_exit(void);
-    int cmd_init(char* db_type);
-    void process_command(char *line);
+    int cmd_init(char* command_argument, size_t db_size, char* db_type);
 
 #endif

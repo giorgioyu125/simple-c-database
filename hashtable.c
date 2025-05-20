@@ -7,12 +7,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "string_functionality.h"
-#include "hashing_functions.h"
+#include "hashing_functionality.h"
 #include "hashtable.h"
 
-// Table Parameters
+// Table size is db_size const in cli
 
-#define TABLE_SIZE 4096
+extern size_t db_size;
 
 // Error Outputs
 
@@ -30,7 +30,7 @@
 
 // Data
 
-Node** hashTable = NULL;
+extern Node** hashTable;
 
 // Hashtable linear functionality
 
@@ -294,7 +294,7 @@ int destroy_db(void){
 }
 
 
-int init_db(void) {
+int init_db(size_t db_size) {
     if (hashTable != NULL){
         #if DEBUG_MODE
             fprintf(stderr, "[ERROR] init_db: Database already initialized.\n");
@@ -303,7 +303,7 @@ int init_db(void) {
         return DB_FAILURE;
     }
 
-    hashTable = (Node**)calloc(TABLE_SIZE, sizeof(Node*));
+    hashTable = (Node**)calloc(db_size, sizeof(Node*));
     
     if (hashTable == NULL){
         #if DEBUG_MODE
@@ -314,7 +314,7 @@ int init_db(void) {
     }
 
     #if DEBUG_MODE
-        printf("[DEBUG] init_db: Database initialized successfully with table size %d.\n", TABLE_SIZE);
+        printf("[DEBUG] init_db: Database initialized successfully with table size %zu.\n", db_size);
     #endif
 
     return DB_SUCCESS;
@@ -460,7 +460,7 @@ int db_load(const char* filename) {
 
     destroy_db(); 
 
-    if (init_db() != DB_SUCCESS) {
+    if (init_db(db_size) != DB_SUCCESS) {
          fprintf(stderr, "[ERROR] db_load: Failed to re-initialize database after clearing.\n");
          return DB_MEM_ERROR;
     }
