@@ -8,36 +8,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <uv.h>
-#include "cli.h"
+#include "hashset.h"
 #include "string_functionality.h"
-#include "hashing_functions.h"
+#include "hashing_functionality.h"
 
-// Table Parameters
-
-#define MATHEMATICAL_SET 0
-#define LOAD_OVERLAP 1
-
-// Error Outputs
-
-#define DB_SUCCESS 0
-#define DB_FAILURE -1       
-#define DB_KEY_NOT_FOUND -2
-#define DB_MEM_ERROR -3     
-#define DB_KEY_EXISTS -4   
-#define DB_FILE_CORRUPT -5
-#define DB_FILE_ERROR -6
-
-// Debugging (Set to 1 to enable this mode)
-
-#define DEBUG_MODE 1
-
-// Data
-
-HashSet* hashset = NULL;
+extern HashSet* hashset;
 
 // Hashset functionality
 
-int set_init(const size_t capacity) {
+int set_init(size_t capacity) {
     #if DEBUG_MODE
         printf("[DEBUG] set_init: Starting Hashset allocation.\n");
     #endif

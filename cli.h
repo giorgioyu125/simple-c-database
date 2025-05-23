@@ -77,8 +77,6 @@ typedef enum {
 
 // public API (function prototypes)
 
-
-
     // Helper functions
     CommandType stocommand(const char* command_str, const char* db_type);
     DataTypes stodatatype(const char* datatype_str);
@@ -89,7 +87,7 @@ typedef enum {
     int cmd_set_exist(char* argument, bool* existence);
     int cmd_set_del(char* argument);
     int cmd_set_list_keys(const char* db_type);
-    size_t cmd_set_count(char* db_type);
+    int cmd_set_count(char* db_type, size_t* counter_ptr);
     int cmd_set_save(char* argument);
     int cmd_set_load(char* argument);
     int cmd_set_reset(char* argument, char* db_type, size_t db_size);

@@ -52,7 +52,7 @@ typedef struct HashSet {
 
 // Public API (Functions property)
 
-int set_init(const unsigned int capacity);
+int set_init(size_t capacity);
 int set_destroy(void);
 int set_add(unsigned char* key);
 int set_delete(unsigned char* key);

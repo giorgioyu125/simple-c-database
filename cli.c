@@ -216,14 +216,14 @@ int cmd_set_list_keys(const char* db_type) {
     }
 }
 
-size_t cmd_set_count(char* db_type) {
+int cmd_set_count(char* db_type, size_t* out_counter) {
     if (db_type == NULL) {
         fprintf(stderr, "[ERROR] cmd_set_count: Database is not initialized properly.\n");
         return CLI_FAILURE;
     }
 
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_set_list_keys: Database type is 'SET'. Listing keys...\n");
+        printf("[DEBUG] cmd_set_list_keys: Database type is 'SET'. Listing all keys...\n");
     #endif
 
     size_t counter = 0;
@@ -234,12 +234,13 @@ size_t cmd_set_count(char* db_type) {
                 counter++;
             } 
         }
-        return counter;
+        *out_counter = counter;
+        return CLI_SUCCESS;
     }
     
-    fprintf(stderr, "[ERROR] cmd_set_count: wrong type of db, a fatal error occured!!\n");
+    fprintf(stderr, "[ERROR] cmd_set_count: Wrong type of db, a fatal error occured!!\n");
 
-    return 0;
+    return CLI_FAILURE;
 }
 
 int cmd_set_save(char* argument) {
@@ -312,8 +313,8 @@ int cmd_set_reset(char* argument, char* db_type, size_t db_size) {
         fprintf(stderr, "[ERROR] cmd_set_reset: function failed execution because of previous set_destroy call.\n");
         return CLI_FAILURE;
     }
-    
-    error = cmd_init((char*)db_size, db_size, db_type);
+
+    error = cmd_init(argument, db_size, db_type);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_reset: set_init throw a problem while.\n");
         return CLI_FAILURE;
@@ -588,14 +589,14 @@ int cmd_table_list_keys(size_t db_size) {
     printf("--- Keys in Database ---\n");
     int key_count = 0; 
 
-    for (int i = 0; i < db_size; i++) {
+    for (size_t i = 0; i < db_size; i++) {
         Node *current = hashTable[i];
         while (current != NULL) {
             if (current->key != NULL) { 
                 printf("   %s\n", current->key);
                 key_count++;
             } else {
-                fprintf(stderr, "[WARN] cmd_table_list_keys: Found node with NULL key in bucket %d.\n", i);
+                fprintf(stderr, "[WARN] cmd_table_list_keys: Found node with NULL key in bucket %zu.\n", i);
             }
             current = current->next;
         }
@@ -729,7 +730,6 @@ int cmd_help(void) {
 
     printf("  COUNT\n");
     printf("      Displays the total number of key-value pairs in the database.\n\n");
-    // Optional: Add COUNT <bucket_index> if you implemented that feature
 
     printf("  SAVE <filename>\n");
     printf("      Saves the current state of the in-memory database to the specified file.\n\n");
@@ -771,21 +771,36 @@ int cmd_table_exit(void) {
 
 int cmd_init(char* command_argument, size_t db_size, char* db_type) {
     char* size_ptr = strchr(command_argument, ' ');
-    db_size = (size_t)atol(size_ptr);
-    // !! DATABASE SIZE INITIALIZATION !!
 
+    // Potentially Unsafe Code if used wrongly
+    int error;
+    char* end_ptr;
+    for (size_t i = 0; *end_ptr != '\0'; i++) {
+        end_ptr++;
+
+        if (isdigit(*end_ptr) != 0) {
+            error = CLI_FAILURE;
+            break;
+        }
+    }
+
+    // End surely unsafe code
+    if (error == CLI_FAILURE) {
+        fprintf(stderr, "[ERROR] cmd_init: An error occured while selecting the size of the Database.\n");
+        return CLI_FAILURE;
+    }
+
+    db_size = strtol(size_ptr, &end_ptr, 10);
     if (strcmp(db_type, "TABLE") == 0) {
-        int error = init_db(db_size); 
+        error = init_db(db_size);
     }
 
     if (strcmp(db_type, "SET") == 0) {
-        int error = set_init(db_size);
+        error = set_init(db_size);
     }
-    
-    int error = CLI_FAILURE;
 
-    if (error != CLI_SUCCESS) {
-        fprintf(stderr, "[ERROR] cmd_table_exit: An error occured while initializing the database.\n");
+    if (error == CLI_FAILURE) {
+        fprintf(stderr, "[ERROR] cmd_init: An error occured while initializing the database.\n");
         return CLI_FAILURE;
     }
 
@@ -883,7 +898,8 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_SET_COUNT: {
-            int error = cmd_set_count(db_type);
+            size_t* out_counter;
+            int error = cmd_set_count(db_type, out_counter);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_count execution finished.\n");
             #endif
