@@ -12,11 +12,9 @@
 #include "string_functionality.h"
 #include "hashing_functionality.h"
 
-extern HashSet* hashset;
-
 // Hashset functionality
 
-int set_init(size_t capacity) {
+int set_init(size_t capacity, HashSet** out_hashset) {
     #if DEBUG_MODE
         printf("[DEBUG] set_init: Starting Hashset allocation.\n");
     #endif
@@ -25,7 +23,7 @@ int set_init(size_t capacity) {
         fprintf(stderr, "[ERROR] set_init: Selected capacity cannot be 0!\n");
     }
     
-    hashset = (HashSet*)malloc(sizeof(HashSet));
+    HashSet* hashset = (HashSet*)malloc(sizeof(HashSet));
     if (hashset == NULL) {
         fprintf(stderr, "[ERROR] set_init: Allocation failed!\n");
         return DB_MEM_ERROR;
@@ -40,22 +38,24 @@ int set_init(size_t capacity) {
 
     hashset->buckets = (Cell**)calloc(hashset->capacity, sizeof(Cell*));
     if (hashset->buckets == NULL) {
-        fprintf(stderr, "[ERROR] set_init: Impossibile to initialize buckets.\n");
+        fprintf(stderr, "[ERROR] set_init: Failed to initialize buckets.\n");
         free(hashset);
         return DB_FAILURE;
     }
     
     if (uv_mutex_init(&hashset->mutex) != 0) {
-        fprintf(stderr, "[ERROR] set_init: Errore nell'inizializzazione del mutex\n");
+        fprintf(stderr, "[ERROR] set_init: Error while creating the mutex for data access.\n");
         free(hashset->buckets);
         free(hashset);
         return DB_FAILURE;
     }
-
+    
+    *out_hashset = hashset;
+    hashset = NULL;
     return DB_SUCCESS;
 }
 
-int set_destroy(void) {
+int set_destroy(HashSet* hashset) {
     if (hashset == NULL) {
         return DB_SUCCESS;  
     }
@@ -144,7 +144,7 @@ int set_destroy(void) {
     return DB_SUCCESS;
 }
 
-int set_add(unsigned char* key) {
+int set_add(unsigned char* key, HashSet* hashset) {
     int errors = 0;
 
     if (hashset == NULL) {
@@ -217,7 +217,7 @@ int set_add(unsigned char* key) {
     return DB_SUCCESS;
 }
 
-int set_delete(unsigned char* key) {
+int set_delete(unsigned char* key, HashSet* hashset) {
     if (hashset == NULL) {
         fprintf(stderr, "[ERROR] set_delete: Critical error, HashSet is not initialized.\n");
         return DB_FAILURE; 
@@ -297,7 +297,7 @@ int set_delete(unsigned char* key) {
     return DB_KEY_NOT_FOUND; 
 }
 
-int set_save(const char* filename) {
+int set_save(const char* filename, HashSet* hashset) {
     #if DEBUG_MODE
         printf("[DEBUG] set_save: Attempting to save HashSet to '%s'.\n", filename);
     #endif
@@ -431,7 +431,7 @@ write_error:
     return DB_FAILURE;
 }
 
-int set_load(const char* filename) {
+int set_load(const char* filename, HashSet* hashset) {
     if (hashset == NULL) {
         return DB_FAILURE;
     }
@@ -499,15 +499,14 @@ int set_load(const char* filename) {
             printf("[DEBUG] set_load: Read key: '%.*s' (klen=%zu)\n", (int)klen, (const char*)key_buffer, klen);
         #endif
 
-        int set_error = set_add(key_buffer);
-        free(key_buffer);
+        int set_error = set_add(key_buffer, hashset);
 
         if (set_error != DB_SUCCESS) {
             fprintf(stderr, "[ERROR] set_load: Failed to add new node (key: '%.*s') to HashSet structure.\n", (int)klen, (const char*)key_buffer);
 
             goto load_error;
         }
-
+        free(key_buffer);
         #if DEBUG_MODE
             entries_read_count++;
         #endif
@@ -528,7 +527,7 @@ load_error:
     return DB_FAILURE; 
 }
 
-bool set_exist(const unsigned char* key, int* out_error_value) {
+bool set_exist(const unsigned char* key, int* out_error_value, HashSet* hashset) {
     if (key == NULL) {
         fprintf(stderr, "[ERROR] set_exist: the provided key is NULL.\n");
         *out_error_value = DB_FAILURE;

@@ -52,12 +52,12 @@ typedef struct HashSet {
 
 // Public API (Functions property)
 
-int set_init(size_t capacity);
-int set_destroy(void);
-int set_add(unsigned char* key);
-int set_delete(unsigned char* key);
-int set_save(const char* filename);
-int set_load(const char* filename);
-bool set_exist(const unsigned char* key, int* out_error_value);
+int set_init(size_t capacity, HashSet** out_hashset);
+int set_destroy(HashSet* hashset);
+int set_add(unsigned char* key, HashSet* hashset);
+int set_delete(unsigned char* key, HashSet* hashset);
+int set_save(const char* filename, HashSet* hashset);
+int set_load(const char* filename, HashSet* hashset);
+bool set_exist(const unsigned char* key, int* out_error_value, HashSet* hashset);
 
 #endif

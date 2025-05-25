@@ -42,13 +42,13 @@ typedef struct Node{
 
 // Public API (function prototypes)
 
-int db_delete(const unsigned char* key);
-void* db_get(const unsigned char* key, size_t* out_value_size);
-bool db_exist(const unsigned char* key);
-int db_set(const unsigned char* key, const void* value_ptr, size_t value_size);
-int destroy_db(void);
-int init_db(size_t db_size);
-int db_save(const char* filename);
-int db_load(const char* filename);
+    int table_delete(const unsigned char* key, Node** hashTable);
+    void* table_get(const unsigned char* key, size_t* out_value_size, Node** hashTable);
+    bool table_exist(const unsigned char* key, Node** hashTable); // IMPLEMENTATION NEEDED
+    int table_set(const unsigned char* key, const void* value_ptr, size_t value_size, Node** hashTable);
+    int table_destroy(Node** hashTable);
+    int table_init(size_t db_size, Node** hashTable);
+    int table_save(const char* filename, Node** hashTable);
+    int table_load(const char* filename, size_t db_size, Node** hashTable);
 
 #endif

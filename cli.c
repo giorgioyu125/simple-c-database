@@ -1,31 +1,14 @@
 // CLI_H
 
 #include "cli.h" 
-
-// Global state
-
-extern Node** hashTable;
-extern HashSet* hashset;
+#include "hashset.h"
 
 // CLI functionality
 
+// refactor THIS with switch case
 CommandType stocommand(const char* command_str, const char* db_type) {
     if (command_str == NULL) return CMD_UNKNOWN;
     if (db_type == NULL) return CMD_UNKNOWN;
-
-    if (strcmp(db_type, "TABLE") == 0) {
-        if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_TABLE_ADD;
-        if (strcmp(command_str, "GET") == 0) return CMD_TABLE_GET;
-        if (strcmp(command_str, "DEL") == 0) return CMD_TABLE_DEL;
-        if (strcmp(command_str, "LIST-KEYS") == 0) return CMD_TABLE_LIST_KEYS;
-        if (strcmp(command_str, "COUNT") == 0) return CMD_TABLE_COUNT;
-        if (strcmp(command_str, "SAVE") == 0) return CMD_TABLE_SAVE;
-        if (strcmp(command_str, "LOAD") == 0) return CMD_TABLE_LOAD;
-        if (strcmp(command_str, "RESET") == 0) return CMD_TABLE_RESET;
-        if (strcmp(command_str, "HELP") == 0) return CMD_TABLE_HELP;
-        if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT;
-        if (strcmp(command_str, "INIT") == 0) return CMD_INIT;
-    }
 
     if (strcmp(db_type, "SET") == 0) {
         if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_SET_ADD;
@@ -38,7 +21,22 @@ CommandType stocommand(const char* command_str, const char* db_type) {
         if (strcmp(command_str, "RESET") == 0) return CMD_SET_RESET;
         if (strcmp(command_str, "HELP") == 0) return CMD_SET_HELP;
         if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_SET_EXIT;
-        if (strcmp(command_str, "INIT") == 0) return CMD_INIT;
+        if (strcmp(command_str, "INIT") == 0) return CMD_SET_INIT;
+    }
+
+
+    if (strcmp(db_type, "TABLE") == 0) {
+        if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_TABLE_ADD;
+        if (strcmp(command_str, "GET") == 0) return CMD_TABLE_GET;
+        if (strcmp(command_str, "DEL") == 0) return CMD_TABLE_DEL;
+        if (strcmp(command_str, "LIST-KEYS") == 0) return CMD_TABLE_LIST_KEYS;
+        if (strcmp(command_str, "COUNT") == 0) return CMD_TABLE_COUNT;
+        if (strcmp(command_str, "SAVE") == 0) return CMD_TABLE_SAVE;
+        if (strcmp(command_str, "LOAD") == 0) return CMD_TABLE_LOAD;
+        if (strcmp(command_str, "RESET") == 0) return CMD_TABLE_RESET;
+        if (strcmp(command_str, "HELP") == 0) return CMD_TABLE_HELP;
+        if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT;
+        if (strcmp(command_str, "INIT") == 0) return CMD_TABLE_INIT;
     }
 
     return CMD_UNKNOWN;
@@ -57,20 +55,20 @@ DataTypes stodatatype(const char *datatype_str) {
 
 // Set
 
-int cmd_set_add(char* argument) {
-    if (argument == NULL) {
+int cmd_set_add(char* command_argument, HashSet* hashset) {
+    if (command_argument == NULL) {
         #if DEBUG_MODE
             printf("[DEBUG] set_add: Adding a Null key is impossible.\n");
         #endif
         return CLI_FAILURE;
     }
     
-    if (strlen(argument) == 0) {
-        fprintf(stderr, "[ERROR] cmd_set_add: Argument (key) cannot be an empty string.\n");
+    if (strlen(command_argument) == 0) {
+        fprintf(stderr, "[ERROR] cmd_set_add: command_argument (key) cannot be an empty string.\n");
         return CLI_FAILURE;
     }
 
-    size_t key_len = strlen(argument);
+    size_t key_len = strlen(command_argument);
     if (key_len > sizeof(size_t)) {
         fprintf(stderr, "[ERROR] cmd_set_add: Key length (%zu) exceeds maximum allowed length (%zu).\n",
                 key_len, sizeof(size_t));
@@ -78,34 +76,34 @@ int cmd_set_add(char* argument) {
     }
     
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_set_add: Argument '%s' passed validation. Calling set_add.\n", (const char*)argument);
+        printf("[DEBUG] cmd_set_add: command_argument '%s' passed validation. Calling set_add.\n", (const char*)command_argument);
     #endif
 
-    int error = set_add((unsigned char*)argument);
+    int error = set_add((unsigned char*)command_argument, hashset);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_add: function failed execution because of set_add previous call.\n");
         return CLI_FAILURE;
     }
 
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_set_add: Key '%s' added successfully.\n", (const char*)argument);
+        printf("[DEBUG] cmd_set_add: Key '%s' added successfully.\n", (const char*)command_argument);
     #endif
 
     return CLI_SUCCESS;
 }
 
-int cmd_set_exist(char* argument, bool* existence) {
-    if (argument == NULL) {
-        fprintf(stderr, "[ERROR] cmd_set_exist: Argument (key) cannot be NULL.\n");
+int cmd_set_exist(char* command_argument, bool* existence, HashSet* hashset) {
+    if (command_argument == NULL) {
+        fprintf(stderr, "[ERROR] cmd_set_exist: command_argument (key) cannot be NULL.\n");
         return CLI_FAILURE;
     }
 
-    if (strlen(argument) == 0) {
-        fprintf(stderr, "[ERROR] cmd_set_exist: Argument (key) cannot be an empty string.\n");
+    if (strlen(command_argument) == 0) {
+        fprintf(stderr, "[ERROR] cmd_set_exist: command_argument (key) cannot be an empty string.\n");
         return CLI_FAILURE;
     }
 
-    size_t key_len = strlen(argument);
+    size_t key_len = strlen(command_argument);
     if (key_len > sizeof(size_t)) { 
         fprintf(stderr, "[ERROR] cmd_set_exist: Key length (%zu) exceeds maximum allowed length (%zu).\n",
                 key_len, sizeof(size_t));
@@ -113,14 +111,13 @@ int cmd_set_exist(char* argument, bool* existence) {
     }
 
     #if DEBUG_MODE
-
-        printf("[DEBUG] cmd_set_exist: Argument '%s' passed validation. Calling set_exist.\n", (const char*)argument);
+        printf("[DEBUG] cmd_set_exist: command_argument '%s' passed validation. Calling set_exist.\n", (const char*)command_argument);
     #endif
 
     int db_operation_error_code; 
     bool key_exists_value;       
 
-    key_exists_value = set_exist((const unsigned char*)argument, &db_operation_error_code);
+    key_exists_value = set_exist((const unsigned char*)command_argument, &db_operation_error_code, hashset);
 
     if (db_operation_error_code != DB_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_exist: Underlying set_exist function failed (error code: %d).\n", db_operation_error_code);
@@ -135,13 +132,13 @@ int cmd_set_exist(char* argument, bool* existence) {
 
     #if DEBUG_MODE
         printf("[DEBUG] cmd_set_exist: Key '%s' checked successfully. Existence: %s.\n",
-               (const char*)argument, key_exists_value ? "true" : "false");
+               (const char*)command_argument, key_exists_value ? "true" : "false");
     #endif
 
     return CLI_SUCCESS;
 }
 
-int cmd_set_del(char* argument) {
+int cmd_set_del(char* command_argument, HashSet* hashset) {
     if (hashset == NULL) {
         fprintf(stderr, "[ERROR] cmd_set_del: Hashset is not initialized correctly.\n");
         #if DEBUG_MODE
@@ -151,170 +148,152 @@ int cmd_set_del(char* argument) {
     }
 
 
-    if (argument == NULL) {
+    if (command_argument == NULL) {
         #if DEBUG_MODE
             printf("[DEBUG] cmd_set_del: Removing a null key can lead to bugs.\n");
         #endif
         return CLI_FAILURE;
     }
     
-    if (strlen(argument) == 0) {
-        fprintf(stderr, "[ERROR] cmd_set_del: Argument (key) cannot be an empty string.\n");
+    if (strlen(command_argument) == 0) {
+        fprintf(stderr, "[ERROR] cmd_set_del: command_argument (key) cannot be an empty string.\n");
         return CLI_FAILURE;
     }
 
-    size_t key_len = strlen(argument);
+    size_t key_len = strlen(command_argument);
     if (key_len > sizeof(size_t)) {
         fprintf(stderr, "[ERROR] cmd_set_del: Key length (%zu) exceeds maximum allowed length (%zu).\n",
                 key_len, sizeof(size_t));
         return CLI_FAILURE;
     }
 
-    int error = set_delete((unsigned char*)argument);
+    int error = set_delete((unsigned char*)command_argument, hashset);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_del: function failed execution because of set_del previous call.\n");
         return CLI_FAILURE;
     }
 
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_set_del: Key '%s' deleted successfully.\n", (const char*)argument);
+        printf("[DEBUG] cmd_set_del: Key '%s' deleted successfully.\n", (const char*)command_argument);
     #endif
     
     return CLI_SUCCESS;
 }
 
-int cmd_set_list_keys(const char* db_type) { 
-    if (db_type == NULL) {
-        fprintf(stderr, "[ERROR] cmd_set_list_keys: db_type parameter cannot be NULL.\n");
-        return CLI_FAILURE; 
-    }
-
+int cmd_set_list_keys(HashSet* hashset) { 
     if (hashset == NULL) {
         fprintf(stderr, "[ERROR] cmd_set_list_keys: Database (hashset) is not initialized!\n");
         return CLI_FAILURE;
     }
 
-    if (strcmp(db_type, "SET") == 0) {
-        #if DEBUG_MODE
-            printf("[DEBUG] cmd_set_list_keys: Database type is 'SET'. Listing keys...\n");
-        #endif
-        size_t keys_found = 0;
-        for (size_t i = 0; i < hashset->capacity; i++) {
-            if ((hashset->buckets[i] != NULL) && (hashset->buckets[i]->key != NULL)) { 
-                printf("Key n.%zu -> %s\n", i, hashset->buckets[i]->key);
-                keys_found++;
-            }
+    #if DEBUG_MODE
+        printf("[DEBUG] cmd_set_list_keys: Database type is 'SET'. Listing keys...\n");
+    #endif
+    size_t keys_found = 0;
+    for (size_t i = 0; i < hashset->capacity; i++) {
+        if ((hashset->buckets[i] != NULL) && (hashset->buckets[i]->key != NULL)) { 
+            printf("Key n.%zu -> %s\n", i, hashset->buckets[i]->key);
+            keys_found++;
         }
-
-        if (keys_found == 0) {
-            printf("(No keys found in the SET database)\n");
-        }
-        return CLI_SUCCESS;
-    } else {
-        fprintf(stderr, "[INFO] cmd_set_list_keys: Not a 'SET' type database ('%s'). Nothing to list for this type.\n", db_type);
-        return CLI_SUCCESS; 
     }
+
+    if (keys_found == 0) {
+        printf("(No keys found in the SET database)\n");
+    }
+    return CLI_SUCCESS;
 }
 
-int cmd_set_count(char* db_type, size_t* out_counter) {
-    if (db_type == NULL) {
-        fprintf(stderr, "[ERROR] cmd_set_count: Database is not initialized properly.\n");
-        return CLI_FAILURE;
-    }
-
+int cmd_set_count(HashSet* hashset) {
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_set_list_keys: Database type is 'SET'. Listing all keys...\n");
+        printf("[DEBUG] cmd_set_count: Database type is 'SET'. Listing all keys...\n");
     #endif
 
     size_t counter = 0;
 
-    if ((strcmp(db_type, "SET") == 0) && (hashset != NULL)) {
-        for (size_t i = 0; i < hashset->capacity; i++) {
-            if (hashset->buckets[i] != NULL) {
-                counter++;
-            } 
-        }
-        *out_counter = counter;
-        return CLI_SUCCESS;
+    for (size_t i = 0; i < hashset->capacity; i++) {
+        if (hashset->buckets[i] != NULL) {
+            counter++;
+        } 
     }
-    
-    fprintf(stderr, "[ERROR] cmd_set_count: Wrong type of db, a fatal error occured!!\n");
+    printf("[INFO] Non-null Keys number is: %zu/%zu", counter, hashset->capacity);
+    return CLI_SUCCESS;
 
+    fprintf(stderr, "[ERROR] cmd_set_count: Wrong type of db, a fatal error occured!!\n");
     return CLI_FAILURE;
 }
 
-int cmd_set_save(char* argument) {
-    if (argument == NULL) {
-        fprintf(stderr, "[ERROR] set_save: Saving to a empty filename.\n");
+int cmd_set_save(char* filename, HashSet* hashset) {
+    if (filename == NULL) {
+        fprintf(stderr, "[ERROR] cmd_set_save: Saving to a empty filename.\n");
         return CLI_FAILURE;
     }
     
-    size_t key_len = strlen(argument);
+    size_t key_len = strlen(filename);
     if (key_len == 0) {
-        fprintf(stderr, "[ERROR] cmd_set_save: Argument (key) cannot be an empty string.\n");
+        fprintf(stderr, "[ERROR] cmd_set_save: filename (key) cannot be an empty string.\n");
         return CLI_FAILURE;
     }
 
     if (key_len > MAX_FILENAME_LENGHT) {
-        fprintf(stderr, "[ERROR] cmd_set_save: Argument length (%zu) exceeds maximum allowed length (%zu).\n",
+        fprintf(stderr, "[ERROR] cmd_set_save: filename length (%zu) exceeds maximum allowed length (%zu).\n",
                 key_len, sizeof(size_t));
         return CLI_FAILURE;
     }
 
-    int error = set_save(argument);
+    int error = set_save(filename, hashset);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_save: Function failed execution because of set_save previous call.\n");
         return CLI_FAILURE;
     }
 
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_set_save: Set saved in file '%s' successfully.\n", (const char*)argument);
+        printf("[DEBUG] cmd_set_save: Set saved in file '%s' successfully.\n", (const char*)filename);
     #endif
     
     return CLI_SUCCESS;
 }
 
-int cmd_set_load(char* argument) {
-    if (argument == NULL) {
+int cmd_set_load(char* filename, HashSet* hashset) {
+    if (filename == NULL) {
         #if DEBUG_MODE
             printf("[DEBUG] cmd_set_load: accessing a null file is not permissible.\n");
         #endif
         return CLI_FAILURE;
     }
     
-    if (strlen(argument) == 0) {
-        fprintf(stderr, "[ERROR] cmd_set_load: Argument need to have a proper lenght (>1).\n");
+    if (strlen(filename) == 0) {
+        fprintf(stderr, "[ERROR] cmd_set_load: filename need to have a proper lenght (>1).\n");
         return CLI_FAILURE;
     }
 
-    size_t key_len = strlen(argument);
+    size_t key_len = strlen(filename);
     if (key_len > MAX_FILENAME_LENGHT) {
-        fprintf(stderr, "[ERROR] cmd_set_load: Argument length (%zu) exceeds maximum allowed length (%zu).\n",
+        fprintf(stderr, "[ERROR] cmd_set_load: filename length (%zu) exceeds maximum allowed length (%zu).\n",
                 key_len, sizeof(size_t));
         return CLI_FAILURE;
     }
 
-    int error = set_save(argument);
+    int error = set_save(filename, hashset);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_load: Function failed execution because of set_save previous call.\n");
         return CLI_FAILURE;
     }
 
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_set_save: Set saved in file '%s' successfully.\n", (const char*)argument);
+        printf("[DEBUG] cmd_set_load: Set saved in file '%s' successfully.\n", (const char*)filename);
     #endif
     
     return CLI_SUCCESS;
 }
 
-int cmd_set_reset(char* argument, char* db_type, size_t db_size) {
-    int error = set_destroy();
+int cmd_set_reset(char* command_argument, size_t db_size, HashSet* hashset) {
+    int error = set_destroy(hashset);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_reset: function failed execution because of previous set_destroy call.\n");
         return CLI_FAILURE;
     }
 
-    error = cmd_init(argument, db_size, db_type);
+    error = cmd_set_init(command_argument, db_size, hashset);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_reset: set_init throw a problem while.\n");
         return CLI_FAILURE;
@@ -327,8 +306,8 @@ int cmd_set_reset(char* argument, char* db_type, size_t db_size) {
     return CLI_SUCCESS;
 }
 
-int cmd_set_exit(void) {
-    int error = set_destroy();
+int cmd_set_exit(HashSet* hashset) {
+    int error = set_destroy(hashset);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_set_exit: function failed execution because of previous set_destroy call.\n");
         return CLI_FAILURE;
@@ -359,8 +338,8 @@ int cmd_set_help(void) {
         "  DEL <key>              - Deletes the key and its associated value from the store.\n",
         "                           Example: DEL server:port\n",
         "\n",
-        "  LISTKEYS <argument>    - Lists all keys currently stored.\n",
-        "                           Note: The <argument> is syntactically required but may not be used\n",
+        "  LISTKEYS <command_argument>    - Lists all keys currently stored.\n",
+        "                           Note: The <command_argument> is syntactically required but may not be used\n",
         "                           for filtering in current implementations.\n",
         "                           Example: LISTKEYS any_text_here\n",
         "\n",
@@ -391,18 +370,32 @@ int cmd_set_help(void) {
     return CLI_SUCCESS;
 }
 
+int cmd_set_init(char* command_argument, size_t db_size, HashSet* out_hashset) {
+    db_size = (size_t)atol(command_argument);
+
+    out_hashset = NULL; 
+    int error = set_init(db_size, &out_hashset);
+    
+    if (error == CLI_FAILURE) {
+        fprintf(stderr, "[ERROR] cmd_table_init: An error occured while initializing or selecting the size of the database.\n");
+        return CLI_FAILURE;
+    }
+
+    return CLI_SUCCESS;     
+}
+
 // Table
 
-int cmd_table_add(char *argument) {
+int cmd_table_add(char *command_argument, Node** hashtable) {
     char *key_str;
     char *type_str;
     char *data_str;
 
     #if DEBUG_MODE
-        printf("[DEBUG] cmd_table_add: Received argument: \"%s\"\n", argument);
+        printf("[DEBUG] cmd_table_add: Received command_argument: \"%s\"\n", command_argument);
     #endif
 
-    key_str = argument;
+    key_str = command_argument;
     char *first_space = strchr(key_str, ' ');
     if (first_space == NULL) {
         fprintf(stderr, "[ERROR] cmd_table_add: Invalid format. Expected 'KEY DATATYPE:VALUE'. Missing space after key.\n");
@@ -444,7 +437,7 @@ int cmd_table_add(char *argument) {
 
     switch (datatype) {
         case STR: { 
-            error_db = db_set(key, data_str, strlen(data_str) + 1);
+            error_db = table_set(key, data_str, strlen(data_str) + 1, hashtable);
             if (error_db != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: Failed to set string value in database for key '%s'.\n", key_str);
                 return CLI_FAILURE;
@@ -474,7 +467,7 @@ int cmd_table_add(char *argument) {
             }
             
             int data_int = (int)data_long;
-            error_db = db_set(key, &data_int, sizeof(int));
+            error_db = table_set(key, &data_int, sizeof(int), hashtable);
             if (error_db != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: Failed to set int value in database for key '%s'.\n", key_str);
                 return CLI_FAILURE;
@@ -506,7 +499,7 @@ int cmd_table_add(char *argument) {
                 return CLI_FAILURE;
             }
 
-            error_db = db_set(key, &converted_value, sizeof(converted_value));
+            error_db = table_set(key, &converted_value, sizeof(converted_value), hashtable);
             if (error_db != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: Failed to set hex value in database for key '%s'.\n", key_str);
                 return CLI_FAILURE;
@@ -515,7 +508,7 @@ int cmd_table_add(char *argument) {
         }
 
         case FILENAME: {
-            error_db = db_set(key, data_str, strlen(data_str) + 1);
+            error_db = table_set(key, data_str, strlen(data_str) + 1, hashtable);
             if (error_db != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: Failed to set filename value in database for key '%s'.\n", key_str);
                 return CLI_FAILURE;
@@ -541,8 +534,8 @@ int cmd_table_add(char *argument) {
 }
 
 
-int cmd_table_get(const unsigned char *argument) {
-    if (argument == NULL || *argument == '\0') {
+int cmd_table_get(const unsigned char *command_argument, Node** hashtable) {
+    if (command_argument == NULL || *command_argument == '\0') {
         fprintf(stderr, "[ERROR] cmd_table_get: GET command requires a non-empty key.\n");
         return CLI_FAILURE;
     }
@@ -550,7 +543,7 @@ int cmd_table_get(const unsigned char *argument) {
     size_t actual_value_size = 0; 
     void *value_ptr = NULL;       
 
-    value_ptr = db_get(argument, &actual_value_size);
+    value_ptr = table_get(command_argument, &actual_value_size, hashtable);
 
     if (value_ptr != NULL) {
         printf("Value (size %zu): ", actual_value_size);
@@ -559,18 +552,18 @@ int cmd_table_get(const unsigned char *argument) {
         printf("\n"); 
         return CLI_SUCCESS; 
     } else {
-        fprintf(stderr, "[ERROR] cmd_table_get: Key '%s' not found.\n", argument);
+        fprintf(stderr, "[ERROR] cmd_table_get: Key '%s' not found.\n", command_argument);
         return CLI_FAILURE; 
     }
 }
 
-int cmd_table_del(const unsigned char *argument) {
-    if (argument == NULL || *argument == '\0') {
+int cmd_table_del(const unsigned char *command_argument, Node** hashtable) {
+    if (command_argument == NULL || *command_argument == '\0') {
         fprintf(stderr, "[ERROR] cmd_table_del: GET command requires a non-empty key.\n");
         return CLI_FAILURE;
     }
   
-    int error = db_delete(argument);
+    int error = table_delete(command_argument, hashtable);
     
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_table_del: An error occured while deleting the key!\n");
@@ -580,7 +573,7 @@ int cmd_table_del(const unsigned char *argument) {
     return CLI_SUCCESS;
 } 
 
-int cmd_table_list_keys(size_t db_size) {
+int cmd_table_list_keys(size_t db_size, Node** hashTable) {
     if (hashTable == NULL) {
         fprintf(stderr, "[ERROR] cmd_table_list_keys: Database not initialized.\n");
         return CLI_FAILURE;
@@ -610,7 +603,7 @@ int cmd_table_list_keys(size_t db_size) {
     return CLI_SUCCESS;
 }
 
-int cmd_table_count(size_t db_size) {
+int cmd_table_count(size_t db_size, Node** hashTable) {
     if (hashTable == NULL) {
         fprintf(stderr, "[ERROR] cmd_table_count: Database not initialized.\n");
         return CLI_FAILURE;
@@ -618,7 +611,7 @@ int cmd_table_count(size_t db_size) {
 
     int key_count = 0;
 
-    for (int i = 0; i < db_size; i++) {
+    for (size_t i = 0; i < db_size; i++) {
         Node *current = hashTable[i];
 
         while (current != NULL) {
@@ -626,7 +619,7 @@ int cmd_table_count(size_t db_size) {
                 key_count++;
             } else {
                 #if DEBUG_MODE
-                    printf("[INFO] cmd_table_count: Found node with NULL key in bucket %d.\n", i); // Maybe too invasive, whatever.
+                    printf("[INFO] cmd_table_count: Found node with NULL key in bucket %zu.\n", i); // Maybe too invasive, whatever.
                 #endif
             }
         }
@@ -641,8 +634,8 @@ int cmd_table_count(size_t db_size) {
     return CLI_SUCCESS;
 }
  
-int cmd_table_save(const char *argument) {
-    if (argument == NULL || *argument == '\0') {
+int cmd_table_save(const char *command_argument, Node** hashTable) {
+    if (command_argument == NULL || *command_argument == '\0') {
         fprintf(stderr, "[ERROR] cmd_table_save: SAVE command requires a non-empty filename.\n");
         return CLI_FAILURE;
     }
@@ -652,7 +645,7 @@ int cmd_table_save(const char *argument) {
         return CLI_FAILURE;
     }
 
-    int error = db_save(argument);
+    int error = table_save(command_argument, hashTable);
     
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_table_save: An error occured while invoking db_save.\n");
@@ -662,8 +655,8 @@ int cmd_table_save(const char *argument) {
     return CLI_SUCCESS;
 }
 
-int cmd_table_load(const char *argument) {
-    if (argument == NULL || *argument == '\0') {
+int cmd_table_load(const char *command_argument, size_t db_size, Node** hashTable) {
+    if (command_argument == NULL || *command_argument == '\0') {
         fprintf(stderr, "[ERROR] cmd_table_load: LOAD command requires a non-empty filename.\n");
         return CLI_FAILURE;
     }
@@ -673,7 +666,7 @@ int cmd_table_load(const char *argument) {
         return CLI_FAILURE;
     }
 
-    int error = db_load(argument);
+    int error = table_load(command_argument, db_size, hashTable);
     
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_table_load: An error occured while invoking db_load.\n");
@@ -683,19 +676,19 @@ int cmd_table_load(const char *argument) {
     return CLI_SUCCESS;
 }
 
-int cmd_table_reset(char* db_type, size_t db_size) {
+int cmd_table_reset(char* command_argument, size_t db_size, Node** hashTable) {
     if (hashTable == NULL) {
         fprintf(stderr, "[ERROR] cmd_table_reset: Database not initialized.\n");
         return CLI_FAILURE;
     }
     
-    int error = destroy_db();
+    int error = table_destroy(hashTable);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_table_reset: An error occured while destroying the database.\n");
         return CLI_FAILURE;
     }
 
-    error = init_db(db_size);
+    error = cmd_table_init(command_argument, db_size, hashTable);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_table_reset: An error occured while re-creating the database.\n");
         return CLI_FAILURE;
@@ -704,7 +697,7 @@ int cmd_table_reset(char* db_type, size_t db_size) {
     return CLI_SUCCESS;
 }
 
-int cmd_help(void) {
+int cmd_table_help(void) {
     printf("\n--- Simple C Database Help ---\n");
     printf("Available commands (case-sensitive):\n\n");
 
@@ -754,13 +747,13 @@ int cmd_help(void) {
     return CLI_SUCCESS;
 }
  
-int cmd_table_exit(void) {
+int cmd_table_exit(Node** hashTable) {
     if (hashTable == NULL) {
         fprintf(stderr, "[ERROR] cmd_table_exit: Database not initialized.\n");
         return CLI_FAILURE;
     }
     
-    int error = destroy_db();
+    int error = table_destroy(hashTable);
     if (error != CLI_SUCCESS) {
         fprintf(stderr, "[ERROR] cmd_table_exit: An error occured while destroying the database.\n");
         return CLI_FAILURE;
@@ -769,49 +762,26 @@ int cmd_table_exit(void) {
     return CLI_SUCCESS;
 }
 
-int cmd_init(char* command_argument, size_t db_size, char* db_type) {
-    char* size_ptr = strchr(command_argument, ' ');
-
-    // Potentially Unsafe Code if used wrongly
-    int error;
-    char* end_ptr;
-    for (size_t i = 0; *end_ptr != '\0'; i++) {
-        end_ptr++;
-
-        if (isdigit(*end_ptr) != 0) {
-            error = CLI_FAILURE;
-            break;
-        }
-    }
-
-    // End surely unsafe code
+int cmd_table_init(char* command_argument, size_t db_size, Node** out_hashtable) {
+    db_size = (size_t)atol(command_argument);
+    int error = table_init(db_size, out_hashtable);
+    
     if (error == CLI_FAILURE) {
-        fprintf(stderr, "[ERROR] cmd_init: An error occured while selecting the size of the Database.\n");
+        fprintf(stderr, "[ERROR] cmd_table_init: An error occured while initializing or selecting the size of the database.\n");
         return CLI_FAILURE;
     }
 
-    db_size = strtol(size_ptr, &end_ptr, 10);
-    if (strcmp(db_type, "TABLE") == 0) {
-        error = init_db(db_size);
-    }
-
-    if (strcmp(db_type, "SET") == 0) {
-        error = set_init(db_size);
-    }
-
-    if (error == CLI_FAILURE) {
-        fprintf(stderr, "[ERROR] cmd_init: An error occured while initializing the database.\n");
-        return CLI_FAILURE;
-    }
-
-    return CLI_SUCCESS;   
+    return CLI_SUCCESS;
 }
 
-int process_command(char *line, char* db_type, size_t db_size) {
+// Command Processor
+
+int process_command(char *line, char* db_type, size_t db_size, void* out_db) {
     #if DEBUG_MODE
         printf("[DEBUG] process_command: Starting line parsing...\n");
-    #endif
-    
+    #endif    
+
+
     char *saveptr;
     char *command_str = strtok_r(line, " ", &saveptr);
     
@@ -821,13 +791,13 @@ int process_command(char *line, char* db_type, size_t db_size) {
     char* command_argument = strtok_r(NULL, "", &saveptr); 
 
     #if DEBUG_MODE
-        printf("[DEBUG] process_command: Line parsing finisched!\n");
+        printf("[DEBUG] process_command: Line parsing finished!\n");
         printf("[DEBUG] process_command: Starting command redirection...\n");
     #endif   
 
     switch (command) {
         case CMD_SET_ADD: {
-            int error = cmd_set_add(command_argument);
+            int error = cmd_set_add(command_argument, out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_add execution finished.\n");
             #endif
@@ -841,7 +811,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
         
         case CMD_SET_SET: {
-            int error = cmd_set_add(command_argument);
+            int error = cmd_set_add(command_argument, out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_add execution finished.\n");
             #endif
@@ -856,7 +826,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
 
         case CMD_SET_GET: {
             bool result;
-            int error = cmd_set_exist(command_argument, &result);
+            int error = cmd_set_exist(command_argument, &result, out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_get execution finished.\n");
             #endif
@@ -870,7 +840,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_SET_DEL: {
-            int error = cmd_set_del(command_argument);
+            int error = cmd_set_del(command_argument, out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_del execution finished.\n");
             #endif
@@ -884,7 +854,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_SET_LIST_KEYS: {
-            int error = cmd_set_list_keys(db_type);
+            int error = cmd_set_list_keys(out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_list_keys execution finished.\n");
             #endif
@@ -898,8 +868,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_SET_COUNT: {
-            size_t* out_counter;
-            int error = cmd_set_count(db_type, out_counter);
+            int error = cmd_set_count(out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_count execution finished.\n");
             #endif
@@ -913,7 +882,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_SET_SAVE: {
-            int error = cmd_set_save(command_argument);
+            int error = cmd_set_save(command_argument, out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_save execution finished.\n");
             #endif
@@ -927,7 +896,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_SET_LOAD: {
-            int error = cmd_set_load(command_argument);
+            int error = cmd_set_load(command_argument, out_db);
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_load execution finished.\n");
             #endif
@@ -941,7 +910,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_SET_RESET: {
-            int error = cmd_set_reset(command_argument, db_type, db_size);
+            int error = cmd_set_reset(command_argument, db_size, out_db);
 
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_reset execution finished.\n");
@@ -958,7 +927,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         case CMD_SET_QUIT: {
             db_size = 0;
             db_type = NULL;
-            int error = cmd_set_exit();
+            int error = cmd_set_exit(out_db);
 
             #if DEBUG_MODE
                 printf("[DEBUG] process_command: cmd_set_quit execution finished.\n");
@@ -986,10 +955,19 @@ int process_command(char *line, char* db_type, size_t db_size) {
             return CLI_SUCCESS;
         }
 
+        case CMD_SET_INIT: {
+            int error = cmd_set_init(command_argument, db_size, out_db);
+            if (error != CLI_SUCCESS) {
+                fprintf(stderr, "[ERROR] cmd_set_init: There was an error while executing the insertion of a new value.\n");
+                return CLI_FAILURE;
+            }
+            return CLI_SUCCESS;
+        }
+
         // Table
         case CMD_TABLE_SET:
         case CMD_TABLE_ADD: {
-            int error = cmd_table_add(command_argument);
+            int error = cmd_table_add(command_argument, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while executing the insertion of a new value.\n");
                 return CLI_FAILURE;
@@ -998,7 +976,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
         
         case CMD_TABLE_GET: {
-            int error = cmd_table_get((const unsigned char*)command_argument);
+            int error = cmd_table_get((const unsigned char*)command_argument, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while getting the value.\n");
                 return CLI_FAILURE;
@@ -1007,7 +985,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }          
         
         case CMD_TABLE_DEL: {
-            int error = cmd_table_del((const unsigned char*)command_argument);
+            int error = cmd_table_del((const unsigned char*)command_argument, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while executing the deletion of the value '%s'.\n", command_argument);
                 return CLI_FAILURE;
@@ -1016,7 +994,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_TABLE_LIST_KEYS: {
-            int error = cmd_table_list_keys(db_size);
+            int error = cmd_table_list_keys(db_size, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while listing the key-value pair of the table.\n");
                 return CLI_FAILURE;
@@ -1025,7 +1003,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_TABLE_COUNT: {
-            int error = cmd_table_count(db_size);
+            int error = cmd_table_count(db_size, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while counting the value in the Table.\n");
                 return CLI_FAILURE;
@@ -1034,7 +1012,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_TABLE_SAVE: {
-            int error = cmd_table_save(command_argument);
+            int error = cmd_table_save(command_argument, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while saving the Table.\n");
                 return CLI_FAILURE;
@@ -1043,7 +1021,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_TABLE_LOAD: {
-            int error = cmd_table_load(command_argument);
+            int error = cmd_table_load(command_argument, db_size, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while loading the saved Table.\n");
                 return CLI_FAILURE;
@@ -1052,7 +1030,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_TABLE_RESET: {
-            int error = cmd_table_reset(db_type, db_size);
+            int error = cmd_table_reset(command_argument, db_size, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while resetting the Table.\n");
                 return CLI_FAILURE;
@@ -1061,7 +1039,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         }
 
         case CMD_TABLE_HELP: {
-            int error = cmd_help();
+            int error = cmd_table_help();
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while printing the help panel.\n");
                 return CLI_FAILURE;
@@ -1073,7 +1051,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
         case CMD_TABLE_EXIT: {
             db_size = 0;
             db_type = NULL;
-            int error = cmd_table_exit();
+            int error = cmd_table_exit(out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while executing the EXIT functionality.\n");
                 return CLI_FAILURE;
@@ -1081,8 +1059,8 @@ int process_command(char *line, char* db_type, size_t db_size) {
             return CLI_SUCCESS;
         }
 
-        case CMD_INIT: {
-            int error = cmd_init(command_argument, db_size, db_type);
+        case CMD_TABLE_INIT: {
+            int error = cmd_table_init(command_argument, db_size, out_db);
             if (error != CLI_SUCCESS) {
                 fprintf(stderr, "[ERROR] cmd_table_add: There was an error while executing the insertion of a new value.\n");
                 return CLI_FAILURE;
@@ -1090,6 +1068,7 @@ int process_command(char *line, char* db_type, size_t db_size) {
             return CLI_SUCCESS;
         }
 
+        default:
         case CMD_UNKNOWN: {
             fprintf(stderr, "[ERROR] process_command: Provided command is unknown, note that commands and arguments are case-sensitive.\n");
             return CLI_SUCCESS;

@@ -47,6 +47,7 @@ typedef enum {
 
 
 typedef enum {
+    // SET
     CMD_SET_ADD,
     CMD_SET_SET,
     CMD_SET_GET,
@@ -59,6 +60,9 @@ typedef enum {
     CMD_SET_RESET,
     CMD_SET_EXIT,
     CMD_SET_QUIT,
+    CMD_SET_INIT,
+
+    // TABLE
     CMD_TABLE_ADD,
     CMD_TABLE_SET,
     CMD_TABLE_GET,
@@ -71,40 +75,45 @@ typedef enum {
     CMD_TABLE_HELP,
     CMD_TABLE_EXIT,
     CMD_TABLE_QUIT,
-    CMD_INIT,
+    CMD_TABLE_INIT,
+
+    // GENERIC
     CMD_UNKNOWN 
 } CommandType;
 
-// public API (function prototypes)
+// Public API (function prototypes)
 
     // Helper functions
     CommandType stocommand(const char* command_str, const char* db_type);
     DataTypes stodatatype(const char* datatype_str);
-    int process_command(char* line, char* db_type, size_t db_size);
+    int process_command(char *line, char* db_type, size_t db_size, void* out_db);
+
 
     // Set
-    int cmd_set_add(char* argument);
-    int cmd_set_exist(char* argument, bool* existence);
-    int cmd_set_del(char* argument);
-    int cmd_set_list_keys(const char* db_type);
-    int cmd_set_count(char* db_type, size_t* counter_ptr);
-    int cmd_set_save(char* argument);
-    int cmd_set_load(char* argument);
-    int cmd_set_reset(char* argument, char* db_type, size_t db_size);
-    int cmd_set_exit(void);
+    int cmd_set_add(char* argument, HashSet* hashset);
+    int cmd_set_exist(char* argument, bool* existence, HashSet* hashset);
+    int cmd_set_del(char* argument, HashSet* hashset);
+    int cmd_set_list_keys(HashSet* hashset);
+    int cmd_set_count(HashSet* hashset);
+    int cmd_set_save(char* argument, HashSet* hashset);
+    int cmd_set_load(char* argument, HashSet* hashset);
+    int cmd_set_reset(char* command_argument, size_t db_size, HashSet* hashset);
+    int cmd_set_exit(HashSet* hashset);
     int cmd_set_help(void);
+    int cmd_set_init(char* command_argument, size_t db_size, HashSet* out_hashset);
+
 
     // Table
-    int cmd_table_add(char *argument);
-    int cmd_table_get(const unsigned char *argument);
-    int cmd_table_del(const unsigned char *argument);
-    int cmd_table_list_keys(size_t db_size);
-    int cmd_table_count(size_t db_size);
-    int cmd_table_save(const char *argument);
-    int cmd_table_load(const char *argument);
-    int cmd_table_reset(char* db_type, size_t db_size);
-    int cmd_help(void);
-    int cmd_exit(void);
-    int cmd_init(char* command_argument, size_t db_size, char* db_type);
+    int cmd_table_add(char *argument, Node** hashTable);
+    int cmd_table_get(const unsigned char *argument, Node** hashTable);
+    int cmd_table_del(const unsigned char *argument, Node** hashTable);
+    int cmd_table_list_keys(size_t db_size, Node** hashTable);
+    int cmd_table_count(size_t db_size, Node** hashTable);
+    int cmd_table_save(const char *argument, Node** hashTable);
+    int cmd_table_load(const char *argument, size_t db_size, Node** hashTable);
+    int cmd_table_reset(char* command_argument, size_t db_size, Node** hashTable);
+    int cmd_help(Node** hashTable);
+    int cmd_exit(Node** hashTable);
+    int cmd_table_init(char* command_argument, size_t db_size, Node** hashTable);
 
 #endif
