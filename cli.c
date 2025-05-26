@@ -2,14 +2,14 @@
 
 #include "cli.h" 
 #include "hashset.h"
+#include <string.h>
 
 // CLI functionality
 
-// refactor THIS with switch case
-CommandType stocommand(const char* command_str, const char* db_type) {
+CommandType stocommand(const char* command_str, char* db_type) {
     if (command_str == NULL) return CMD_UNKNOWN;
-    if (db_type == NULL) return CMD_UNKNOWN;
-
+    
+    // SET
     if (strcmp(db_type, "SET") == 0) {
         if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_SET_ADD;
         if (strcmp(command_str, "GET") == 0) return CMD_SET_GET;
@@ -24,8 +24,8 @@ CommandType stocommand(const char* command_str, const char* db_type) {
         if (strcmp(command_str, "INIT") == 0) return CMD_SET_INIT;
     }
 
-
-    if (strcmp(db_type, "TABLE") == 0) {
+    // TABLE
+    if (strcmp(db_type, "TABLE")) {
         if (strcmp(command_str, "ADD") == 0 || strcmp(command_str, "SET") == 0) return CMD_TABLE_ADD;
         if (strcmp(command_str, "GET") == 0) return CMD_TABLE_GET;
         if (strcmp(command_str, "DEL") == 0) return CMD_TABLE_DEL;
@@ -38,7 +38,6 @@ CommandType stocommand(const char* command_str, const char* db_type) {
         if (strcmp(command_str, "EXIT") == 0 || strcmp(command_str, "QUIT") == 0) return CMD_TABLE_EXIT;
         if (strcmp(command_str, "INIT") == 0) return CMD_TABLE_INIT;
     }
-
     return CMD_UNKNOWN;
 }
 
@@ -776,25 +775,54 @@ int cmd_table_init(char* command_argument, size_t db_size, Node** out_hashtable)
 
 // Command Processor
 
-int process_command(char *line, char* db_type, size_t db_size, void* out_db) {
+int update_db_param(char* command_str, char* command_argument, char** db_type_ptr, size_t* db_size_ptr) {
+    char *parse_context;
+    if (!(strcmp(command_str, "INIT") == 0)) {
+        #if DEBUG_MODE
+            printf(stderr, "[ERROR] update_db_param: Parameter update event not triggered.\n");
+        #endif
+        return CLI_FAILURE;
+    }
+
+    if ((*db_type_ptr == NULL) || (*db_size_ptr == 0)) { 
+        fprintf(stderr, "[ERROR] update_db_param: Type argument missing for INIT command!\n");
+        return CLI_FAILURE;
+    }
+   
+    *db_type_ptr = strtok_r(command_argument, " ", &parse_context);
+
+    char* size_val_str = strtok_r(NULL, " ", &parse_context);
+
+    if (size_val_str == NULL) { 
+        fprintf(stderr, "[ERROR] update_db_param: Size argument missing for INIT command!\n");
+        return CLI_FAILURE;
+    }
+
+    *db_size_ptr = (size_t)atol(size_val_str);
+
+    #if DEBUG_MODE
+        printf("[INFO] update_db_type: Database type updated to '%s' and Size to '%zu'.\n", *db_type_ptr, *db_size_ptr);
+    #endif
+    return CLI_SUCCESS;
+}
+
+int process_command(char* line, char* db_type, size_t db_size, void* out_db) {
     #if DEBUG_MODE
         printf("[DEBUG] process_command: Starting line parsing...\n");
-    #endif    
+    #endif
 
-
-    char *saveptr;
-    char *command_str = strtok_r(line, " ", &saveptr);
+    char* saveptr;
+    char* command_str = strtok_r(line, " ", &saveptr);
     
-    if (command_str == NULL) return CLI_FAILURE;
-
-    CommandType command = stocommand(command_str, db_type);
-    char* command_argument = strtok_r(NULL, "", &saveptr); 
-
+    char* command_argument = strtok_r(NULL, "", &saveptr);
     #if DEBUG_MODE
         printf("[DEBUG] process_command: Line parsing finished!\n");
         printf("[DEBUG] process_command: Starting command redirection...\n");
-    #endif   
+    #endif     
+    
 
+    update_db_type(command_str, command_argument, &db_type, &db_size);
+    CommandType command = stocommand(command_str, db_type);
     switch (command) {
         case CMD_SET_ADD: {
             int error = cmd_set_add(command_argument, out_db);

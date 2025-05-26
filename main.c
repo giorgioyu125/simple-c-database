@@ -7,15 +7,11 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "cli.h"
+#include "hashtable.h"
 
 // Constants
 
 #define MAX_LINE_SIZE 1024
-size_t db_size = 0;
-char* db_type = NULL;
-
-// Data
-
 
 // Functionality
 
@@ -47,10 +43,14 @@ int main(void) {
     printf("Listening for commands... (Type 'HELP')\n");
     printf("Simple Key-Value DB Input (type 'quit' to exit)\n");
 
+    size_t db_size = 0;
+    void* out_db = NULL;
+    char* db_type = NULL;
+    
     while (true) {       
         printf("> ");
         fflush(stdout);
-        
+
         int error = read_line(line, MAX_LINE_SIZE);
 
         if (error != EXIT_SUCCESS || error == EOF) {
@@ -65,7 +65,7 @@ int main(void) {
             }
         }
         
-        process_command(line, db_type, db_size);
+        process_command(line, db_type, db_size, out_db);
 
         memset(line, 0, sizeof(line));
     }

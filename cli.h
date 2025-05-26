@@ -33,7 +33,7 @@
 
     // Table/Set
     
-    #define TABLE_SIZE 4096 // Update this to globabl constant of init function
+    #define TABLE_SIZE 4096
 
 // Data
 
@@ -45,6 +45,10 @@ typedef enum {
     DATATYPE_UNKNOWN
 } DataTypes;
 
+typedef enum {
+    SET,
+    TABLE
+} DataBase_Type;
 
 typedef enum {
     // SET
@@ -84,10 +88,10 @@ typedef enum {
 // Public API (function prototypes)
 
     // Helper functions
-    CommandType stocommand(const char* command_str, const char* db_type);
+    CommandType stocommand(const char* command_str, char* db_type);
     DataTypes stodatatype(const char* datatype_str);
     int process_command(char *line, char* db_type, size_t db_size, void* out_db);
-
+    int update_db_type(char* command_argument, char* command_str, char** db_type_ptr, size_t* db_size_ptr);
 
     // Set
     int cmd_set_add(char* argument, HashSet* hashset);
