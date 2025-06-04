@@ -1,0 +1,7 @@
+db_snapshot.db
+*.out
+persistance.txt
+key-value_db
+build/
+temp/
+
