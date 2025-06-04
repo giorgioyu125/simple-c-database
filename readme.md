@@ -47,7 +47,7 @@ This project uses CMake to manage the build process.
 4.  **Compile the project:**
     ```bash
     cmake --build .
-    # Oppure, se hai generato Makefiles:
+    # Or if you have already generated makefiles:
     # make
     ```
 
