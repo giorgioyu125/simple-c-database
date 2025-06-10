@@ -63,7 +63,7 @@ Once built, run the executable to start the CLI. You can then use the commands l
 
 ---
 
-## For Developers (Optional Sections you might want to add later)
+## For Developers
 
 ### Contributing
 Please contact me in private so we can discuss about your contribution. (Email: sabert148@gmail.com ,Discord: jonsnow0036)
