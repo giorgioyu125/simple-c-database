@@ -519,4 +519,3 @@ double table_occupied_bucket_counter(hashtable_t* table) {
 
     return (double)occupied_buckets / table->buckets_count;
 }
-

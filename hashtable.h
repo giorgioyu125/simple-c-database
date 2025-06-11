@@ -1,4 +1,4 @@
-// DEFINES
+// INCLUDES
 
 #include <stdint.h>
 #include <stdlib.h>
