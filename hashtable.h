@@ -4,14 +4,9 @@
 // INCLUDES
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <pthread.h>
 #include <stdbool.h>
-#include <stddef.h>
-#include <string.h>
-#include <stdio.h>
 #include "string_functionality.h"
-#include "hashing_functionality.h"
 
 // MACRO
 

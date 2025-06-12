@@ -1,67 +1,67 @@
 // HEADER
 
 #include "command.h"
-
+#include <stdio.h>
 
 // PRIVATE API
-
-static int cmd_set(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", argv[0]);
+      
+static int cmd_set(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_get(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_get: Executing GET for key: '%s'.\n", argv[0]);
+static int cmd_get(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_get: Executing GET for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_add(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_add: Executing ADD for key: '%s'.\n", argv[0]);
+static int cmd_add(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_add: Executing ADD for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_init(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", argv[0]);
+static int cmd_init(hashtable_t** context, int argc, char* command_argument) {
+    printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_destroy(hashtable_t* context, int argc, char* argv[]) {
+static int cmd_destroy(hashtable_t* context, int argc, char* command_argument) {
     printf("[INFO] cmd_destroy: Executing DESTROY.\n");
     return 0;
 }
 
-static int cmd_del(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_del: Executing DEL for key: '%s'.\n", argv[0]);
+static int cmd_del(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_del: Executing DEL for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_exist(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_exist: Executing EXIST for key: '%s'.\n", argv[0]);
+static int cmd_exist(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_exist: Executing EXIST for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_replace(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_repl: Executing REPLACE for key: '%s'.\n", argv[0]);
+static int cmd_replace(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_repl: Executing REPLACE for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_resize(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_resize: Executing RESIZE for key: '%s'.\n", argv[0]);
+static int cmd_resize(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_resize: Executing RESIZE for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_clear(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_clear: Executing CLEAR for key: '%s'.\n", argv[0]);
+static int cmd_clear(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_clear: Executing CLEAR for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_load_factor(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_load_factor: Executing LOAD_FACTOR for key: '%s'\n", argv[0]);
+static int cmd_load_factor(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_load_factor: Executing LOAD_FACTOR for key: '%s'\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_count(hashtable_t* context, int argc, char* argv[]) {
-    printf("[INFO] cmd_count: Executing COUNT for key: '%s' with value: '%s'\n", argv[0], argv[1]);
+static int cmd_count(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_count: Executing COUNT of type '%s'.\n", first_argument[0]);
     return 0;
 }
 

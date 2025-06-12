@@ -1,5 +1,10 @@
 // Headers
 #include "hashtable.h"    
+#include "hashing_functionality.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+#include <stdio.h>
 
 // Lifecycle
 hashtable_t* table_create(size_t initial_capacity){

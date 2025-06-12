@@ -5,10 +5,8 @@
 
 // INCLUDES
 
-#include <stdio.h>
 #include <strings.h>
 #include "hashtable.h"
-#include "string_functionality.h"
 
 
 // MACRO
@@ -16,7 +14,6 @@
 typedef int (*command_proc)(hashtable_t* context, int argc, char **argv);
 
 // DATA
-
 
 typedef struct command{
     const char* name;

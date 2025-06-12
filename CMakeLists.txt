@@ -15,6 +15,7 @@ add_executable(${EXECUTABLE_NAME}
     main.c
     hashtable.c
     hashing_functionality.c
+    command.c
 )
 
 target_compile_definitions(${EXECUTABLE_NAME}
