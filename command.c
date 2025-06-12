@@ -1,0 +1,116 @@
+// HEADER
+
+#include "command.h"
+
+
+// PRIVATE API
+
+static int cmd_set(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_get(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_get: Executing GET for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_add(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_add: Executing ADD for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_init(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_destroy(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_destroy: Executing DESTROY.\n");
+    return 0;
+}
+
+static int cmd_del(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_del: Executing DEL for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_exist(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_exist: Executing EXIST for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_replace(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_repl: Executing REPLACE for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_resize(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_resize: Executing RESIZE for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_clear(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_clear: Executing CLEAR for key: '%s'.\n", argv[0]);
+    return 0;
+}
+
+static int cmd_load_factor(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_load_factor: Executing LOAD_FACTOR for key: '%s'\n", argv[0]);
+    return 0;
+}
+
+static int cmd_count(hashtable_t* context, int argc, char* argv[]) {
+    printf("[INFO] cmd_count: Executing COUNT for key: '%s' with value: '%s'\n", argv[0], argv[1]);
+    return 0;
+}
+
+
+static struct command command_table[] = {
+    //  Name            Function Pointer        Arity   R/W
+    {   "GET",          cmd_get,                2,      "r"     },
+    {   "SET",          cmd_set,                3,      "w"     },
+    {   "ADD",          cmd_add,                3,      "rw"    },
+    {   "INIT",         cmd_init,               1,      "w"     },
+    {   "DESTROY",      cmd_destroy,            1,      "rw"    },
+    {   "DEL",          cmd_del,                3,      "rw"    },
+    {   "EXIST",        cmd_exist,              2,      "r"     },
+    {   "REPLACE",      cmd_repl,               4,      "rw"    },
+    {   "RESIZE",       cmd_resize,             2,      "rw"    },
+    {   "CLEAR",        cmd_clear,              2,      "w"     },
+    {   "LOAD_FACTOR",  cmd_load_factor,        1,      "r"     },
+    {   "COUNT",        cmd_count,              1,      "r"     },
+
+    {   NULL,           NULL,                   0,      NULL    }
+};
+
+struct command_registry {
+    struct command* commands;
+    size_t count;
+};
+
+
+// CMD Helper Functions
+
+command_registry* registry_create(){
+    command_registry* reg = malloc(sizeof(struct command_registry));
+    if (!reg) {
+        fprintf(s[INFO] cmd_set: tderr, " [ERROR] registry_create: Failed to allocate memory for command registry");
+        return NULL;
+    }
+
+    size_t command_count = (sizeof(command_table) / sizeof(command)) - 1;
+
+    reg->commands = command_table;
+    reg->count = command_count;
+
+    printf("[INFO] registry_create: Command registry created with %zu commands.\n", reg->count);
+
+    return reg;
+}
+
+// PUBLIC API
+
+int execute_cmd(char* line){
+
+}

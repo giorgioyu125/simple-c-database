@@ -8,7 +8,8 @@ project(
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-set(EXECUTABLE_NAME database_server)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(EXECUTABLE_NAME simple_c_database)
 
 add_executable(${EXECUTABLE_NAME}
     main.c
@@ -54,7 +55,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
 endif()
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(UV REQUIRED libuv)
+pkg_check_modules(UV REQUIRED IMPORTED_TARGET libuv)
+add_library(uv::uv ALIAS PkgConfig::UV)
 
 find_package(Threads REQUIRED)
 

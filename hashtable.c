@@ -496,7 +496,7 @@ double table_load_factor(hashtable_t* table) {
 
     size_t count = __atomic_load_n(&table->elem_count, __ATOMIC_RELAXED);
 
-    return (double)count / capacity;
+    return (double)count / (double)capacity;
 }
 
 double table_occupied_bucket_counter(hashtable_t* table) {
@@ -517,5 +517,9 @@ double table_occupied_bucket_counter(hashtable_t* table) {
         }
     }
 
-    return (double)occupied_buckets / table->buckets_count;
+    return (double)occupied_buckets / (double)table->buckets_count;
+}
+
+size_t table_total_elem(hashtable_t* table){
+    return table->elem_count;
 }

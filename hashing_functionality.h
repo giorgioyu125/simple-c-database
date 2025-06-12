@@ -5,7 +5,7 @@
 
 // Public API (function prototypes)
 
-unsigned long hash(const unsigned char* str);
+    unsigned long hash(const unsigned char* str);
 
 
 #endif

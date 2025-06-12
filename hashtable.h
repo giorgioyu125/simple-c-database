@@ -1,3 +1,6 @@
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
+
 // INCLUDES
 
 #include <stdint.h>
@@ -51,8 +54,9 @@ typedef struct hashtable_t{
     int table_replace(hashtable_t* table, const unsigned char* key, void* new_value, void (*value_destroyer)(void*));
 
     // Monitoring
-    size_t table_count(hashtable_t* table);
     size_t table_capacity(hashtable_t* table);
-    int table_loadfactor(hashtable_t* table);
+    double table_load_factor(hashtable_t* table);
+    double table_occupied_bucket_counter(hashtable_t* table);
+    size_t table_total_elem(hashtable_t* table);
 
-    
+#endif

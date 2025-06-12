@@ -1,3 +1,6 @@
+// Header
+#include "hashing_functionality.h"
+
 // Hashing functionality
 
 unsigned long hash(const unsigned char *str) {
