@@ -1,7 +1,35 @@
 // Header
 #include "string_functionality.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 
 // Strings functionality
+
+int tokenize_string(const char* delimiter, char* input_str, int max_tokens, char** out_tokens) {
+    int count = 0;
+
+    if (delimiter == NULL){
+        return -1;
+    }
+
+    char* token = strtok(input_str, delimiter);
+
+    while (token != NULL) {
+        if (count >= max_tokens) {
+            break;
+        }
+
+        out_tokens[count] = token;
+        count++;
+
+        token = strtok(NULL, delimiter);
+    }
+
+    return count;
+}
+
 
 unsigned char* key_formatter(const char* input_key) {
     if (input_key == NULL) {
@@ -10,7 +38,7 @@ unsigned char* key_formatter(const char* input_key) {
 
     unsigned char* formatted_key = (unsigned char*)malloc(KEY_MAX_LEN);
     if (formatted_key == NULL) {
-        return NULL; // Errore di allocazione
+        return NULL;
     }
 
     strncpy((char*)formatted_key, input_key, KEY_MAX_LEN);
@@ -59,7 +87,6 @@ int is_key_valid(const unsigned char* key){
     }
 
     for (size_t i = 0; key[i] != '\0'; ++i) {
-
         if (!isalnum((unsigned char)key[i])) {
             return 0; 
         }

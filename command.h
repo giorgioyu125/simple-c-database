@@ -13,6 +13,8 @@
 
 typedef int (*command_proc)(hashtable_t* context, int argc, char **argv);
 
+#define MAX_TOKENS 10
+
 // DATA
 
 typedef struct command{

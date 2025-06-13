@@ -1,78 +1,73 @@
 // HEADER
 
 #include "command.h"
+#include "string_functionality.h"
 #include <stdio.h>
 
 // PRIVATE API
-<<<<<<< HEAD
     
 static int cmd_set(hashtable_t* context, int argc, char** argv) {
     printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", argv[1]);
-=======
-      
-static int cmd_set(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", first_argument[0]);
->>>>>>> parent of 45fcfda (command.c setted up, only command internal logic missing)
     return 0;
 }
 
-static int cmd_get(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_get: Executing GET for key: '%s'.\n", first_argument[0]);
+static int cmd_set(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", argv[1]);
     return 0;
 }
 
-static int cmd_add(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_add: Executing ADD for key: '%s'.\n", first_argument[0]);
+static int cmd_get(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_get: Executing GET for key: '%s'.\n", argv[1]);
     return 0;
 }
 
-<<<<<<< HEAD
+static int cmd_add(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_add: Executing ADD for key: '%s'.\n", argv[1]);
+    return 0;
+}
+
 static int cmd_init(hashtable_t* context, int argc, char** argv) {
     printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", argv[1]);
-=======
-static int cmd_init(hashtable_t** context, int argc, char* command_argument) {
-    printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", first_argument[0]);
->>>>>>> parent of 45fcfda (command.c setted up, only command internal logic missing)
     return 0;
 }
 
-static int cmd_destroy(hashtable_t* context, int argc, char* command_argument) {
+static int cmd_destroy(hashtable_t* context, int argc, char** argv) {
     printf("[INFO] cmd_destroy: Executing DESTROY.\n");
     return 0;
 }
 
-static int cmd_del(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_del: Executing DEL for key: '%s'.\n", first_argument[0]);
+static int cmd_del(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_del: Executing DEL for key: '%s'.\n", argv[1]);
     return 0;
 }
 
-static int cmd_exist(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_exist: Executing EXIST for key: '%s'.\n", first_argument[0]);
+static int cmd_exist(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_exist: Executing EXIST for key: '%s'.\n", argv[1]);
     return 0;
 }
 
-static int cmd_replace(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_repl: Executing REPLACE for key: '%s'.\n", first_argument[0]);
+static int cmd_replace(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_repl: Executing REPLACE for key: '%s'.\n", argv[1]);
     return 0;
 }
 
-static int cmd_resize(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_resize: Executing RESIZE for key: '%s'.\n", first_argument[0]);
+static int cmd_resize(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_resize: Executing RESIZE for key: '%s'.\n", argv[1]);
     return 0;
 }
 
-static int cmd_clear(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_clear: Executing CLEAR for key: '%s'.\n", first_argument[0]);
+static int cmd_clear(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_clear: Executing CLEAR for key: '%s'.\n", argv[1]);
     return 0;
 }
 
-static int cmd_load_factor(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_load_factor: Executing LOAD_FACTOR for key: '%s'\n", first_argument[0]);
+static int cmd_load_factor(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_load_factor: Executing LOAD_FACTOR for key: '%s'\n", argv[1]);
     return 0;
 }
 
-static int cmd_count(hashtable_t* context, int argc, char* command_argument) {
-    printf("[INFO] cmd_count: Executing COUNT of type '%s'.\n", first_argument[0]);
+static int cmd_count(hashtable_t* context, int argc, char** argv) {
+    printf("[INFO] cmd_count: Executing COUNT of type '%s'.\n", argv[1]);
     return 0;
 }
 
@@ -105,8 +100,8 @@ struct command_registry {
 
 command_registry* registry_create(){
     command_registry* reg = malloc(sizeof(struct command_registry));
-    if (!reg) {
-        fprintf(s[INFO] cmd_set: tderr, " [ERROR] registry_create: Failed to allocate memory for command registry");
+    if (reg == NULL) {
+        fprintf(stderr, "[ERROR] registry_create: Failed to allocate memory for command registry.\n");
         return NULL;
     }
 
@@ -120,7 +115,6 @@ command_registry* registry_create(){
     return reg;
 }
 
-<<<<<<< HEAD
 int registry_destroy(command_registry** reg){
     if (reg == NULL || *reg == NULL){
         return -1;
@@ -136,25 +130,46 @@ int registry_destroy(command_registry** reg){
 }
 
 
-ssize_t find_command_index_from_line(command_registry* reg, const char* command){
+ssize_t find_command_index(command_registry* reg, const char* command){
     if ((reg == NULL) || (line == NULL) {
         return -1; 
     }
+    
+    for (size_t i = 0; i < reg->count; i++){
+         if (ustrcmp(reg->commands[i].name, command_name) == 0) {
+            return i;
+        }       
+    }
 
+    return -1;
 }
 
 
 // PUBLIC API
 
-int execute_cmd(command_registry* reg, hashtable_t* db, char* line) {
-    if ((reg == NULL) || (db == NULL) || (line == NULL)) {
+int execute_cmd(const command_registry* reg, hashtable_t* db, char* line) {
+    if (reg == NULL || db == NULL || line == NULL) {
         return -1;
     }
-    
-=======
-// PUBLIC API
 
-int execute_cmd(char* line){
->>>>>>> parent of 45fcfda (command.c setted up, only command internal logic missing)
+    char* tokens[MAX_TOKENS];
+    int num_tokens = tokenize_string(" ", line, MAX_TOKENS, tokens);
 
+    if (num_tokens <= 0) {
+        return -1; 
+    }
+
+    const char* command_name = tokens[0];
+    ssize_t command_index = find_command_index(reg, command_name);
+    if (command_index == -1) {
+        return -1; 
+    }
+
+    const struct command* cmd = reg->commands[command_index];
+
+    if (cmd->arity != num_tokens) {
+        return -1; 
+    }
+
+    return cmd->proc(db, num_tokens, tokens);
 }
