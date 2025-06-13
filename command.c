@@ -5,9 +5,6 @@
 #include <stdio.h>
 
 // PRIVATE API
-            
-:%s/first_argument\[0\]/argv[1]/gc
-
     
 static int cmd_set(hashtable_t* context, int argc, char** argv) {
     printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", argv[1]);
@@ -24,7 +21,7 @@ static int cmd_add(hashtable_t* context, int argc, char** argv) {
     return 0;
 }
 
-static int cmd_init(hashtable_t** context, int argc, char** argv) {
+static int cmd_init(hashtable_t* context, int argc, char** argv) {
     printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", argv[1]);
     return 0;
 }
@@ -114,7 +111,7 @@ command_registry* registry_create(){
 }
 
 int registry_destroy(command_registry** reg){
-    if (reg == NULL){
+    if (reg == NULL || *reg == NULL){
         return -1;
     }
     
@@ -122,89 +119,26 @@ int registry_destroy(command_registry** reg){
     (*reg)->commands = NULL;
 
     free(*reg);
+    *reg = NULL;
 
     return 0;
 }
 
 
-ssize_t find_command_index_from_line(command_registry* reg, const char* line){
-    if (!reg || !line) {
+ssize_t find_command_index_from_line(command_registry* reg, const char* command){
+    if ((reg == NULL) || (line == NULL) {
         return -1; 
     }
 
-    char command_token[KEY_MAX_LEN]; 
-    int i = 0;
-
-    while (isspace((unsigned char)*line)) {
-        line++;
-    }
-
-    while (*line && !isspace((unsigned char)*line) && i < sizeof(command_token) - 1) {
-        command_token[i++] = *line++;
-    }
-    command_token[i] = '\0'; 
-
-    if (i == 0) {
-        return -1; 
-    }
-
-    ssize_t found_index = -1;
-
-    for (size_t j = 0; j < reg->count; ++j) {
-        if (if (strcasecmp(command_token, reg->commands[j].name) == 0)) {
-            found_index = j; 
-            break;
-        }
-    }
-
-    return found_index;
 }
 
 
 // PUBLIC API
 
 int execute_cmd(command_registry* reg, hashtable_t* db, char* line) {
-    if (!reg || !db || !line) {
+    if ((reg == NULL) || (db == NULL) || (line == NULL)) {
         return -1;
     }
+    
 
-    ssize_t command_index = find_command_index_from_line(reg, line);
-
-    if (command_index == -1) {
-        fprintf(stderr, "[ERRORE] Comando non riconosciuto.\n");
-        return -1;
-    }
-
-    const command* cmd = registry_get_command_by_index(reg, command_index);
-    if (cmd == NULL) {
-        fprintf(stderr, "[ERRORE] Errore interno: indice di comando non valido.\n");
-        return -1;
-    }
-
-    size_t argc = 0;
-    char** argv = split_string_by_space(line, &argc);
-    if (argv == NULL) {
-        fprintf(stderr, "[ERRORE] Fallimento durante il parsing degli argomenti.\n");
-        return -1;
-    }
-
-    if (cmd->arity != argc) {
-        fprintf(stderr, "[ERRORE] Numero di argomenti errato per '%s'. Attesi %d, ricevuti %zu.\n",
-                cmd->name, cmd->arity, argc);
-        free(argv);
-        return -1;
-    }
-
-    if (cmd->proc == NULL) {
-        fprintf(stderr, "[ERRORE] Comando '%s' non implementato.\n", cmd->name);
-        free(argv);
-        return -1;
-    }
-
-    printf("[INFO] Esecuzione di '%s'...\n", cmd->name);
-    int result = cmd->proc(db, argc, argv);
-
-    free(argv);
-
-    return result;
 }
