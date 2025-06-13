@@ -11,7 +11,7 @@
 
 // MACRO
 
-typedef int (*command_proc)(hashtable_t* context, int argc, char* command_argument);
+typedef int (*command_proc)(hashtable_t* context, int argc, char **argv);
 
 // DATA
 
@@ -28,6 +28,7 @@ typedef struct command_registry command_registry;
 
 command_registry* registry_create();
 void registry_destroy(command_registry* reg);
-ssize_t find_command_index_from_line(command_registry* reg, const char* line);
+command* find_command(const command_registry* reg, const char* name);
+
 
 #endif

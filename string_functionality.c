@@ -3,54 +3,14 @@
 
 // Strings functionality
 
-unsigned char** split_string_by_space(unsigned char* input_str, size_t* token_count) {
-    if (input_str == NULL || token_count == NULL) {
-        return NULL;
-    }
-
-    size_t capacity = 8; 
-    size_t count = 0;
-
-    unsigned char** tokens = malloc(capacity * sizeof(unsigned char*));
-    if (tokens == NULL) {
-        return NULL;
-    }
-
-    tokens[count++] = input_str;
-
-    while (*input_str != '\0') {
-        if (*input_str == ' ') {
-            *input_str = '\0'; 
-            if (*(input_str + 1) != '\0') {
-                if (count >= capacity) {
-                    capacity *= 2; 
-                    unsigned char** new_tokens = realloc(tokens, capacity * sizeof(unsigned char*));
-                    if (new_tokens == NULL) {
-                        free(tokens); 
-                        return NULL;
-                    }
-                    tokens = new_tokens;
-                }
-                tokens[count++] = input_str + 1;
-            }
-        }
-        input_str++;
-    }
-
-    tokens[count] = NULL;
-    *token_count = count;
-
-    return tokens;
-}
-
-unsigned char* key_formatter(const char* input_key){
+unsigned char* key_formatter(const char* input_key) {
     if (input_key == NULL) {
         return NULL;
     }
 
     unsigned char* formatted_key = (unsigned char*)malloc(KEY_MAX_LEN);
     if (formatted_key == NULL) {
-        return NULL;
+        return NULL; // Errore di allocazione
     }
 
     strncpy((char*)formatted_key, input_key, KEY_MAX_LEN);
@@ -64,7 +24,7 @@ unsigned char* key_formatter(const char* input_key){
 }
 
 
-unsigned char* ustrdup(const unsigned char *src){
+unsigned char *ustrdup(const unsigned char *src){
     if (src == NULL){
         return NULL;
     }

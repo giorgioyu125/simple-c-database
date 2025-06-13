@@ -1,68 +1,78 @@
 // HEADER
 
 #include "command.h"
-#include "string_functionality.h"
 #include <stdio.h>
 
 // PRIVATE API
+<<<<<<< HEAD
     
 static int cmd_set(hashtable_t* context, int argc, char** argv) {
     printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", argv[1]);
+=======
+      
+static int cmd_set(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_set: Executing SET for key: '%s'.\n", first_argument[0]);
+>>>>>>> parent of 45fcfda (command.c setted up, only command internal logic missing)
     return 0;
 }
 
-static int cmd_get(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_get: Executing GET for key: '%s'.\n", argv[1]);
+static int cmd_get(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_get: Executing GET for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_add(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_add: Executing ADD for key: '%s'.\n", argv[1]);
+static int cmd_add(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_add: Executing ADD for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
+<<<<<<< HEAD
 static int cmd_init(hashtable_t* context, int argc, char** argv) {
     printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", argv[1]);
+=======
+static int cmd_init(hashtable_t** context, int argc, char* command_argument) {
+    printf("[INFO] cmd_init: Executing INIT for size: '%s'.\n", first_argument[0]);
+>>>>>>> parent of 45fcfda (command.c setted up, only command internal logic missing)
     return 0;
 }
 
-static int cmd_destroy(hashtable_t* context, int argc, char** argv) {
+static int cmd_destroy(hashtable_t* context, int argc, char* command_argument) {
     printf("[INFO] cmd_destroy: Executing DESTROY.\n");
     return 0;
 }
 
-static int cmd_del(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_del: Executing DEL for key: '%s'.\n", argv[1]);
+static int cmd_del(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_del: Executing DEL for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_exist(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_exist: Executing EXIST for key: '%s'.\n", argv[1]);
+static int cmd_exist(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_exist: Executing EXIST for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_replace(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_repl: Executing REPLACE for key: '%s'.\n", argv[1]);
+static int cmd_replace(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_repl: Executing REPLACE for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_resize(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_resize: Executing RESIZE for key: '%s'.\n", argv[1]);
+static int cmd_resize(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_resize: Executing RESIZE for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_clear(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_clear: Executing CLEAR for key: '%s'.\n", argv[1]);
+static int cmd_clear(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_clear: Executing CLEAR for key: '%s'.\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_load_factor(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_load_factor: Executing LOAD_FACTOR for key: '%s'\n", argv[1]);
+static int cmd_load_factor(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_load_factor: Executing LOAD_FACTOR for key: '%s'\n", first_argument[0]);
     return 0;
 }
 
-static int cmd_count(hashtable_t* context, int argc, char** argv) {
-    printf("[INFO] cmd_count: Executing COUNT of type '%s'.\n", argv[1]);
+static int cmd_count(hashtable_t* context, int argc, char* command_argument) {
+    printf("[INFO] cmd_count: Executing COUNT of type '%s'.\n", first_argument[0]);
     return 0;
 }
 
@@ -76,7 +86,7 @@ static struct command command_table[] = {
     {   "DESTROY",      cmd_destroy,            1,      "rw"    },
     {   "DEL",          cmd_del,                3,      "rw"    },
     {   "EXIST",        cmd_exist,              2,      "r"     },
-    {   "REPLACE",      cmd_replace,            4,      "rw"    },
+    {   "REPLACE",      cmd_repl,               4,      "rw"    },
     {   "RESIZE",       cmd_resize,             2,      "rw"    },
     {   "CLEAR",        cmd_clear,              2,      "w"     },
     {   "LOAD_FACTOR",  cmd_load_factor,        1,      "r"     },
@@ -96,7 +106,7 @@ struct command_registry {
 command_registry* registry_create(){
     command_registry* reg = malloc(sizeof(struct command_registry));
     if (!reg) {
-        fprintf(stderr, "[ERROR] registry_create: Failed to allocate memory for command registry");
+        fprintf(s[INFO] cmd_set: tderr, " [ERROR] registry_create: Failed to allocate memory for command registry");
         return NULL;
     }
 
@@ -110,6 +120,7 @@ command_registry* registry_create(){
     return reg;
 }
 
+<<<<<<< HEAD
 int registry_destroy(command_registry** reg){
     if (reg == NULL || *reg == NULL){
         return -1;
@@ -140,5 +151,10 @@ int execute_cmd(command_registry* reg, hashtable_t* db, char* line) {
         return -1;
     }
     
+=======
+// PUBLIC API
+
+int execute_cmd(char* line){
+>>>>>>> parent of 45fcfda (command.c setted up, only command internal logic missing)
 
 }
