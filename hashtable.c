@@ -1,6 +1,8 @@
 // Headers
 #include "hashtable.h"    
+#include "command.h"
 #include "hashing_functionality.h"
+#include "string_functionality.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -222,7 +224,6 @@ int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*
     if ((table == NULL) || (key == NULL)){
         return -1;
     }
-    
 
     unsigned long hash_full = hash(key);
     size_t bucket_index = hash_full % table->buckets_count;
@@ -287,7 +288,7 @@ void* table_get(hashtable_t* table, const unsigned char* key) {
 
     void* found_value = NULL; 
 
-    for (int i = 0; i < BUCKET_CAPACITY; i++) {
+    for (int i = 0; i < BUCKET_CAPACITY; i++){
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
             memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0){
@@ -455,39 +456,6 @@ int table_replace(hashtable_t* table, const unsigned char* key, void* new_value,
 
 
 // Monitoring
-size_t table_memory_usage(hashtable_t* table, size_t (*value_sizer)(const void* value)) {
-    if (table == NULL) {
-        return 0;
-    }
-
-    size_t total_size = 0;
-    total_size += sizeof(hashtable_t);
-    total_size += table->buckets_count * sizeof(hashtable_bucket_t);
-    total_size += table->lock_count * sizeof(pthread_rwlock_t);
-
-    if (value_sizer != NULL) {
-        for (size_t i = 0; i < table->buckets_count; i++) {
-            if (pthread_rwlock_rdlock(&table->locks[i]) == 0) {
-                for (int j = 0; j < BUCKET_CAPACITY; j++) {
-                    if (table->buckets[i].in_use[j] && table->buckets[i].values[j] != NULL) {
-                        total_size += value_sizer(table->buckets[i].values[j]);
-                    }
-                }
-                pthread_rwlock_unlock(&table->locks[i]);
-            }
-        }
-    }
-
-    return total_size;
-}
-    
-size_t table_capacity(hashtable_t* table) {
-    if (table == NULL) {
-        return 0; 
-    }
-
-    return table->buckets_count * BUCKET_CAPACITY;
-}
 
 double table_load_factor(hashtable_t* table) {
     if (table == NULL) {
@@ -502,6 +470,48 @@ double table_load_factor(hashtable_t* table) {
     size_t count = __atomic_load_n(&table->elem_count, __ATOMIC_RELAXED);
 
     return (double)count / (double)capacity;
+}
+
+  // Count
+
+
+size_t table_memory_usage_improved(hashtable_t* table, size_t (*value_sizer)(const void* value)) {
+    if (table == NULL) {
+        return 0;
+    }
+
+    size_t total_size = 0;
+
+    total_size += sizeof(hashtable_t);
+    total_size += table->buckets_count * sizeof(hashtable_bucket_t);
+    total_size += table->lock_count * sizeof(pthread_rwlock_t);
+
+    if (value_sizer != NULL) {
+        for (size_t i = 0; i < table->buckets_count; i++) {
+            if (pthread_rwlock_rdlock(&table->locks[i]) != 0) {
+
+                return (size_t)-1;
+            }
+            for (int j = 0; j < BUCKET_CAPACITY; j++) {
+                if (table->buckets[i].in_use[j] && table->buckets[i].values[j] != NULL) {
+                    total_size += value_sizer(table->buckets[i].values[j]);
+
+                }
+            }
+            pthread_rwlock_unlock(&table->locks[i]);
+        }
+    }
+
+    return total_size;
+}
+
+    
+size_t table_capacity(hashtable_t* table) {
+    if (table == NULL) {
+        return 0; 
+    }
+
+    return table->buckets_count * BUCKET_CAPACITY;
 }
 
 double table_occupied_bucket_counter(hashtable_t* table) {

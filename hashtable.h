@@ -49,6 +49,7 @@ typedef struct hashtable_t{
     int table_replace(hashtable_t* table, const unsigned char* key, void* new_value, void (*value_destroyer)(void*));
 
     // Monitoring
+    size_t table_memory_usage(hashtable_t* table, size_t (*value_sizer)(const void* value));
     size_t table_capacity(hashtable_t* table);
     double table_load_factor(hashtable_t* table);
     double table_occupied_bucket_counter(hashtable_t* table);

@@ -3,7 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <limits.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 // Strings functionality
 
@@ -30,29 +33,33 @@ int tokenize_string(const char* delimiter, char* input_str, int max_tokens, char
     return count;
 }
 
-
-unsigned char* key_formatter(const char* input_key) {
-    if (input_key == NULL) {
-        return NULL;
+size_t stosizet(const char* s) {
+    if (s == NULL) {
+        return 0;
     }
 
-    unsigned char* formatted_key = (unsigned char*)malloc(KEY_MAX_LEN);
-    if (formatted_key == NULL) {
-        return NULL;
+    if (*s == '\0') {
+        return 0;
     }
 
-    strncpy((char*)formatted_key, input_key, KEY_MAX_LEN);
-
-    size_t len = strlen(input_key);
-    if (len < KEY_MAX_LEN) {
-        memset(formatted_key + len, 0, KEY_MAX_LEN - len);
+    size_t result = 0;
+    for (; *s != '\0'; ++s) {
+        char c = *s;
+        if (c < '0' || c > '9') {
+            return 0; 
+        }
+        int digit = c - '0';
+        if (result > (SIZE_MAX - (size_t)digit) / 10) {
+            return 0; 
+        }
+        result = result * 10 + (size_t)digit;
     }
 
-    return formatted_key;
+    return result;
 }
 
 
-unsigned char *ustrdup(const unsigned char *src){
+unsigned char* ustrdup(const unsigned char *src){
     if (src == NULL){
         return NULL;
     }
@@ -77,20 +84,6 @@ int ustrcmp(const unsigned char* s1, const unsigned char* s2){
     return (int)(*s1) - (int)(*s2);
 }
 
-int is_key_valid(const unsigned char* key){
-    if (key == NULL) {
-        return 0;
-    }
-
-    if (key[0] == '\0') {
-        return 0;
-    }
-
-    for (size_t i = 0; key[i] != '\0'; ++i) {
-        if (!isalnum((unsigned char)key[i])) {
-            return 0; 
-        }
-    }
-
-    return 1;
+bool is_key_valid(const unsigned char* key) {
+    return ((key != NULL) && (key[0] != '\0'));
 }
