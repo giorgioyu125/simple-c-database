@@ -10,6 +10,9 @@
 
 // MACRO
 
+#define LIKELY(x)       __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
+
 #define BUCKET_CAPACITY 8
 
 // DATA
@@ -42,7 +45,7 @@ typedef struct hashtable_t{
 
     // Core Ops
     int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*value_destroyer)(void*));
-    void* table_get(hashtable_t* table, const unsigned char* key);
+    void* table_get(hashtable_t* table, const unsigned char* key, size_t (*value_sizer)(const void*));
     int table_delete(hashtable_t* table, const unsigned char* key, void (*value_destroyer)(void*));
     bool table_exist(hashtable_t* table, const unsigned char* key);
     int table_add(hashtable_t* table, const unsigned char* key, void* value);

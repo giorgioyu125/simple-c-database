@@ -59,7 +59,7 @@ typedef enum : uint8_t{
 typedef struct data_entry_t{ // DB stored structure
     size_t size;
     data_type_t type;
-    char* data;
+    unsigned char data[];
 } data_entry_t;
 
 
@@ -169,6 +169,7 @@ typedef struct command_result_t{
 
         struct count_output{
             cmd_count_t type;
+            data_type_t out_type;
             union count_t{
                 double counter_d;
                 size_t counter_s;
@@ -187,7 +188,7 @@ typedef struct command{
     const char* flags;
 } command;
 
-typedef struct execute_result_t {
+typedef struct execute_result_t{
     int status_code;
 
     char* body;
@@ -199,6 +200,13 @@ typedef struct execute_result_t {
 typedef struct command_registry command_registry;
 
 // PUBLIC API
+
+    // EXECUTOR
+    execute_result_t execute_command(command_registry* reg, hashtable_t* context,
+                                     const char* command_name, int argc, char* argv[],
+                                     const size_t arg_lengths[]);
+
+
 
 command_registry* registry_create();
 int registry_destroy(command_registry** reg);

@@ -1,6 +1,5 @@
 // Headers
 #include "hashtable.h"    
-#include "command.h"
 #include "hashing_functionality.h"
 #include "string_functionality.h"
 #include <stdlib.h>
@@ -220,6 +219,7 @@ int table_resize(hashtable_t* table, size_t new_capacity){
 }
 
 // Core Ops
+
 int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*value_destroyer)(void*)){ // Key needs to be passed firstly in key_formatter
     if ((table == NULL) || (key == NULL)){
         return -1;
@@ -272,8 +272,8 @@ int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*
     return -2; 
 }
 
-void* table_get(hashtable_t* table, const unsigned char* key) {
-    if ((table == NULL) || (key == NULL)) {
+void* table_get(hashtable_t* table, const unsigned char* key, size_t (*value_sizer)(const void*)) {
+    if (table == NULL || key == NULL || value_sizer == NULL) {
         return NULL;
     }
 
@@ -286,21 +286,39 @@ void* table_get(hashtable_t* table, const unsigned char* key) {
         return NULL;
     }
 
-    void* found_value = NULL; 
+    void* internal_value = NULL;
 
-    for (int i = 0; i < BUCKET_CAPACITY; i++){
+    for (int i = 0; i < BUCKET_CAPACITY; i++) {
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0){
+            memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0) {
 
-            found_value = bucket->values[i];
-            break; 
+            internal_value = bucket->values[i];
+            break;
         }
+    }
+
+    if (internal_value == NULL) {
+        pthread_rwlock_unlock(&table->locks[bucket_index]);
+        return NULL;
+    }
+
+    size_t total_size = value_sizer(internal_value);
+
+    if (total_size == 0) {
+        pthread_rwlock_unlock(&table->locks[bucket_index]);
+        return NULL; 
+    }
+
+    void* value_copy = malloc(total_size);
+
+    if (value_copy != NULL) {
+        memcpy(value_copy, internal_value, total_size);
     }
 
     pthread_rwlock_unlock(&table->locks[bucket_index]);
 
-    return found_value;
+    return value_copy;
 }
 
 int table_delete(hashtable_t* table, const unsigned char* key, void (*value_destroyer)(void*)) {
