@@ -6,6 +6,10 @@
 #include <stddef.h> 
 #include <stdbool.h> 
 
+// Macro and Defines
+
+#define KEY_MAX_LEN 255
+
 // Public API
     int tokenize_string(const char* delimiter, char* input_str, int max_tokens, char** out_tokens);
     size_t stosizet(const char* s);
