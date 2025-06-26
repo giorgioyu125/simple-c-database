@@ -7,15 +7,16 @@ project(
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(EXECUTABLE_NAME simple_c_database)
 
 add_executable(${EXECUTABLE_NAME}
-    main.c
-    hashtable.c
-    hashing_functionality.c
-    command.c
+    src/server.c
+    src/command.c
+    src/hashing_functionality.c
+    src/hashtable.c
+    src/string_functionality.c
 )
 
 target_compile_definitions(${EXECUTABLE_NAME}
@@ -25,7 +26,6 @@ target_compile_definitions(${EXECUTABLE_NAME}
 target_compile_options(${EXECUTABLE_NAME} PRIVATE
     -g3                
     -Wall
-    -Werror
     -Wextra
     -Wpedantic
     -Wshadow
@@ -55,20 +55,32 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
     )
 endif()
 
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(UV REQUIRED IMPORTED_TARGET libuv)
-add_library(uv::uv ALIAS PkgConfig::UV)
+
+find_path(LLHTTP_INCLUDE_DIR NAMES llhttp.h)
+find_library(LLHTTP_LIBRARY NAMES llhttp)
+if(NOT LLHTTP_INCLUDE_DIR OR NOT LLHTTP_LIBRARY)
+    message(FATAL_ERROR "Libreria llhttp non trovata.")
+endif()
+message(STATUS "Trovata libreria llhttp: ${LLHTTP_LIBRARY}")
 
 find_package(Threads REQUIRED)
 
+
 target_include_directories(${EXECUTABLE_NAME}
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE 
+        src
+        ${LLHTTP_INCLUDE_DIR}
 )
 
+# Collega le librerie necessarie
 target_link_libraries(${EXECUTABLE_NAME}
     PRIVATE
         Threads::Threads
-        uv::uv      
+        PkgConfig::UV     
+        ${LLHTTP_LIBRARY} 
 )
 
 message(STATUS "Configuration complete. Use 'cmake --build .' to build.")
