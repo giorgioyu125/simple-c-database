@@ -58,8 +58,22 @@ size_t stosizet(const char* s) {
     return result;
 }
 
+size_t ustrlen(const unsigned char* str){
 
-unsigned char* ustrdup(const unsigned char *src){
+    if (str == NULL) {
+        return 0;
+    }
+
+    const unsigned char* start = str;
+
+    while (*str != '\0') {
+        str++;
+    }
+
+    return (size_t)(str - start);
+}
+
+unsigned char* ustrdup(const char *src){
     if (src == NULL){
         return NULL;
     }
@@ -84,6 +98,6 @@ int ustrcmp(const unsigned char* s1, const unsigned char* s2){
     return (int)(*s1) - (int)(*s2);
 }
 
-bool is_key_valid(const unsigned char* key) {
+bool is_key_valid(const unsigned char* key){
     return ((key != NULL) && (key[0] != '\0'));
 }

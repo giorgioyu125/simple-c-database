@@ -363,10 +363,12 @@ static command_result_t cmd_count(hashtable_t* context, command_data_t* input) {
     return result;
 }
 
+// Command Table
+
 static command command_table[] = { // Name needs to be in lexicographic order
     // name         tag                     proc               arity   flags
     //----------------------------------------------------------------------
-    { "ADD",        CMD_TYPE_ADD,           cmd_add,           2,      "w" },
+    { "ADD",        CMD_TYPE_ADD,           cmd_add,           2,      "wa" },
     { "CLEAR",      CMD_TYPE_CLEAR,         cmd_clear,         0,      "w" },
     { "COUNT",      CMD_TYPE_COUNT,         cmd_count,         1,      "r" },
     { "CREATE",     CMD_TYPE_CREATE,        cmd_create,        1,      "w" },
@@ -375,14 +377,14 @@ static command command_table[] = { // Name needs to be in lexicographic order
     { "EXIST",      CMD_TYPE_EXIST,         cmd_exist,         1,      "r" },
     { "GET",        CMD_TYPE_GET,           cmd_get,           1,      "r" },
     { "LOADFACTOR", CMD_TYPE_LOADFACTOR,    cmd_load_factor,   0,      "r" },
-    { "REPLACE",    CMD_TYPE_REPLACE,       cmd_replace,       2,      "w" },
+    { "REPLACE",    CMD_TYPE_REPLACE,       cmd_replace,       2,      "wa" },
     { "RESIZE",     CMD_TYPE_RESIZE,        cmd_resize,        1,      "w" },
-    { "SET",        CMD_TYPE_SET,           cmd_set,           2,      "w" },
+    { "SET",        CMD_TYPE_SET,           cmd_set,           2,      "wa" },
 
     { NULL,         255,                    NULL,              0,      NULL}
 };
 
-// Command Table
+// Execute Helper function
 
 bool stocmdcount(const char* subtype_str, cmd_count_t* out_type) {
     if (subtype_str == NULL || subtype_str[0] == '\0' || out_type == NULL) {
@@ -607,7 +609,7 @@ static int build_command_data(command_data_t* out_data, cmd_function_type tag, c
 }
 
 static execute_result_t create_error_response(int status, const char* message) {
-    char* body = strdup(message);
+    unsigned char* body = ustrdup(message);
     if (body == NULL) {
         return (execute_result_t){ 
             .status_code = 500, 
@@ -620,13 +622,12 @@ static execute_result_t create_error_response(int status, const char* message) {
     return (execute_result_t){
         .status_code = status,
         .body = body, 
-        .body_length = strlen(message),
+        .body_length = ustrlen(body),
         .content_type = DATA_TYPE_STRING
     };
 }
 
 // PUBLIC API
-
 
 execute_result_t execute_command(command_registry* reg, hashtable_t* context,
                                  const char* command_name, int argc, char* argv[],
@@ -653,9 +654,8 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
 
     command_result_t cmd_result = cmd->proc(context, &command_inputs);
 
-    if (cmd->tag == CMD_TYPE_SET || cmd->tag == CMD_TYPE_ADD || cmd->tag == CMD_TYPE_REPLACE) {
-
-        int error = cmd_result.output.set_output.error; 
+    if (strchr(cmd->flags, 'a') != NULL) {
+        int error = cmd_result.output.set_output.error;
         if (error != 0 && command_inputs.in.set_input.value != NULL) {
             free(command_inputs.in.set_input.value);
         }
@@ -667,15 +667,11 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
 
         case CMD_TYPE_GET: { 
             data_entry_t* value = cmd_result.output.get_output.value;
-            final_result.body = malloc(value->size);
-            if (final_result.body == NULL) {
-                return create_error_response(500, "Out of memory");
-            }
-            memcpy(final_result.body, value->data, value->size);
-            final_result.body_length = value->size;
-            final_result.content_type = value->type;
+            final_result.body = (unsigned char*)value; 
+            final_result.body_length = sizeof(data_entry_t) + value->size;
+            final_result.content_type = DATA_TYPE_DATA_ENTRY_PTR; 
             break;
-        }
+        }        
 
         case CMD_TYPE_SET:
         case CMD_TYPE_ADD:
@@ -685,29 +681,29 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
         case CMD_TYPE_CLEAR:
         case CMD_TYPE_DESTROY: {
             if (cmd_result.output.set_output.error != 0) {
-
                 return create_error_response(409, "Operation failed");
             } else {
-                final_result.body = strdup("OK");
+
+                final_result.body = ustrdup("OK");
                 if (final_result.body == NULL) return create_error_response(500, "Out of memory");
-                final_result.body_length = 2;
+                final_result.body_length = ustrlen(final_result.body);
                 final_result.content_type = DATA_TYPE_STRING;
             }
             break;
         }
 
         case CMD_TYPE_EXIST: {
-            final_result.body = strdup(cmd_result.output.exist_output.existence ? "1" : "0");
+            final_result.body = ustrdup(cmd_result.output.exist_output.existence ? "1" : "0");
             if (final_result.body == NULL) return create_error_response(500, "Out of memory");
-            final_result.body_length = 1;
+            final_result.body_length = ustrlen(final_result.body);
             final_result.content_type = DATA_TYPE_STRING;
             break;
         }
 
         case CMD_TYPE_CREATE: {
-            final_result.body = strdup("OK");
+            final_result.body = ustrdup("OK");
             if (final_result.body == NULL) return create_error_response(500, "Out of memory");
-            final_result.body_length = 2;
+            final_result.body_length = ustrlen(final_result.body);
             final_result.content_type = DATA_TYPE_STRING;
             break;
         }
@@ -715,27 +711,21 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
         case CMD_TYPE_COUNT: {
             char text_buffer[64];
             switch (cmd_result.output.count_output.out_type) {
-                case DATA_TYPE_DOUBLE: {
-                    double value = cmd_result.output.count_output.count_t.counter_d;
-                    snprintf(text_buffer, sizeof(text_buffer), "%.2f", value);
+                case DATA_TYPE_DOUBLE:
+                    snprintf(text_buffer, sizeof(text_buffer), "%.2f", cmd_result.output.count_output.count_t.counter_d);
                     break;
-                }
-                case DATA_TYPE_SIZE: {
-                    size_t value = cmd_result.output.count_output.count_t.counter_s;
-                    snprintf(text_buffer, sizeof(text_buffer), "%zu", value);
+                case DATA_TYPE_SIZE:
+                    snprintf(text_buffer, sizeof(text_buffer), "%zu", cmd_result.output.count_output.count_t.counter_s);
                     break;
-                }
-                default: {
+                default:
                     return create_error_response(500, "Internal error: Unknown COUNT result type");
-                }
             }
 
-            final_result.body = strdup(text_buffer);
+            final_result.body = ustrdup(text_buffer);
             if (final_result.body == NULL) {
                 return create_error_response(500, "Out of memory");
             }
-
-            final_result.body_length = strlen(final_result.body);
+            final_result.body_length = ustrlen(final_result.body);
             final_result.content_type = DATA_TYPE_STRING; 
             break;
         }
@@ -743,23 +733,20 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
         case CMD_TYPE_LOADFACTOR: {
             char buffer[64];
             snprintf(buffer, sizeof(buffer), "%.4f", cmd_result.output.load_factor_output.load_factor);
-            final_result.body = strdup(buffer);
+
+            final_result.body = ustrdup(buffer);
             if (final_result.body == NULL) return create_error_response(500, "Out of memory");
-            final_result.body_length = strlen(buffer);
+            final_result.body_length = ustrlen(final_result.body);
             final_result.content_type = DATA_TYPE_STRING;
             break;
         }
 
-        case CMD_TYPE_EMPTY: {
+        case CMD_TYPE_EMPTY:
             return create_error_response(404, "Key not found");
-        }
-        case CMD_TYPE_ERROR: {
+        case CMD_TYPE_ERROR:
             return create_error_response(500, "Internal server error");
-        }
-
-        default: {
+        default:
             return create_error_response(500, "Internal error: unhandled result type");
-        }
     }
 
     return final_result;

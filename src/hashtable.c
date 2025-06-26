@@ -220,7 +220,7 @@ int table_resize(hashtable_t* table, size_t new_capacity){
 
 // Core Ops
 
-int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*value_destroyer)(void*)){ // Key needs to be passed firstly in key_formatter
+int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*value_destroyer)(void*)){
     if ((table == NULL) || (key == NULL)){
         return -1;
     }
@@ -238,7 +238,7 @@ int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*
     for (int i = 0; i < BUCKET_CAPACITY; i++){
         if ((bucket->in_use[i]) && 
             ((bucket->hashes[i]) == hash_full) && 
-            (memcmp(bucket->keys[i], key, KEY_MAX_LEN)) == 0){
+            (ustrcmp(bucket->keys[i], key) == 0)){
             if ((value_destroyer != NULL) && (bucket->values[i] != NULL)) {
                 value_destroyer(bucket->values[i]);
             }
@@ -291,7 +291,7 @@ void* table_get(hashtable_t* table, const unsigned char* key, size_t (*value_siz
     for (int i = 0; i < BUCKET_CAPACITY; i++) {
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0) {
+            ustrcmp(bucket->keys[i], key) == 0) {
 
             internal_value = bucket->values[i];
             break;
@@ -336,9 +336,9 @@ int table_delete(hashtable_t* table, const unsigned char* key, void (*value_dest
     hashtable_bucket_t* bucket = &table->buckets[bucket_index];
 
     for (int i = 0; i < BUCKET_CAPACITY; i++) {
-        if (bucket->in_use[i] &&
-            bucket->hashes[i] == hash_full &&
-            memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0) {
+        if ((bucket->in_use[i]) &&
+            (bucket->hashes[i] == hash_full) &&
+            (ustrcmp(bucket->keys[i], key) == 0)) {
 
             bucket->in_use[i] = 0; 
 
@@ -378,7 +378,7 @@ bool table_exist(hashtable_t* table, const unsigned char* key){
     for (int i = 0; i < BUCKET_CAPACITY; i++){
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0){
+            ustrcmp(bucket->keys[i], key) == 0){
 
             found = true;
             break; 
@@ -409,7 +409,7 @@ int table_add(hashtable_t* table, const unsigned char* key, void* value) {
 
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0) {
+            ustrcmp(bucket->keys[i], key) == 0) {
 
             pthread_rwlock_unlock(&table->locks[bucket_index]);
             return -3; 
@@ -455,7 +455,7 @@ int table_replace(hashtable_t* table, const unsigned char* key, void* new_value,
     for (int i = 0; i < BUCKET_CAPACITY; i++) {
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            memcmp(bucket->keys[i], key, KEY_MAX_LEN) == 0) {
+            ustrcmp(bucket->keys[i], key) == 0) {
 
             if (value_destroyer != NULL && bucket->values[i] != NULL) {
                 value_destroyer(bucket->values[i]);

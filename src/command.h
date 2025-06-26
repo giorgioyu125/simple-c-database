@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <strings.h>
+#include <stdio.h>
 #include "hashtable.h"
 
 // MACRO
@@ -191,7 +192,7 @@ typedef struct command{
 typedef struct execute_result_t{
     int status_code;
 
-    char* body;
+    unsigned char* body;
     size_t body_length;
 
     data_type_t content_type;
@@ -210,7 +211,7 @@ typedef struct command_registry command_registry;
 
 command_registry* registry_create();
 int registry_destroy(command_registry** reg);
-command* find_command(const command_registry* reg, const char* name);
+ssize_t find_command_index(command_registry* reg, const char* command_name);
 bool stocmdcount(const char* subtype_str, cmd_count_t* out_type);
 
 #endif
