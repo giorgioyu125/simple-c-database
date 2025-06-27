@@ -493,7 +493,7 @@ double table_load_factor(hashtable_t* table) {
   // Count
 
 
-size_t table_memory_usage_improved(hashtable_t* table, size_t (*value_sizer)(const void* value)) {
+size_t table_memory_usage(hashtable_t* table, size_t (*value_sizer)(const void* value)) {
     if (table == NULL) {
         return 0;
     }

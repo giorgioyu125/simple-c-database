@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
 // Strings functionality
 
 int tokenize_string(const char* delimiter, char* input_str, int max_tokens, char** out_tokens) {

@@ -209,9 +209,11 @@ typedef struct command_registry command_registry;
 
 
 
-command_registry* registry_create();
-int registry_destroy(command_registry** reg);
-ssize_t find_command_index(command_registry* reg, const char* command_name);
-bool stocmdcount(const char* subtype_str, cmd_count_t* out_type);
+    command_registry* registry_create();
+    int registry_destroy(command_registry** reg);
+    ssize_t find_command_index(command_registry* reg, const char* command_name);
+    bool stocmdcount(const char* subtype_str, cmd_count_t* out_type);
+    void free_execute_result(execute_result_t* result);
+    void destroy_data_entry(void* value);
 
 #endif
