@@ -5,6 +5,7 @@
 
 // INCLUDES
 
+#include <uv.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <strings.h>
@@ -34,11 +35,9 @@ typedef enum : uint8_t{
 } data_type_t;
 
 typedef enum : uint8_t{
-    CMD_TYPE_CREATE,
     CMD_TYPE_GET,
     CMD_TYPE_SET,
     CMD_TYPE_ADD,
-    CMD_TYPE_DESTROY,
     CMD_TYPE_DEL,
     CMD_TYPE_EXIST,
     CMD_TYPE_REPLACE,
@@ -57,7 +56,7 @@ typedef enum : uint8_t{
     CMD_COUNT_OCCUPIED_BUCKET
 } cmd_count_t;
 
-typedef struct data_entry_t{ // DB stored structure
+typedef struct data_entry_t{   // DB stored structure
     size_t size;
     data_type_t type;
     unsigned char data[];
@@ -67,10 +66,6 @@ typedef struct data_entry_t{ // DB stored structure
 typedef struct command_data_t{ // Command necessary input
     cmd_function_type tag;        
     union in{
-        struct create_input{
-            size_t db_size;
-        }create_input;       
-
         struct get_input{
             const unsigned char* key;
         }get_input;
@@ -84,10 +79,6 @@ typedef struct command_data_t{ // Command necessary input
             const unsigned char* key;
             data_entry_t* value;
         }add_input;       
-
-        struct destroy_input{
-            char _dummy;
-        }destroy_input;        
 
         struct del_input{
             const unsigned char* key;
@@ -124,10 +115,6 @@ typedef struct command_data_t{ // Command necessary input
 typedef struct command_result_t{
     cmd_function_type type;
     union out{
-        struct create_output{
-            hashtable_t* hashtable;
-        }create_output;
-
         struct get_output{
             data_entry_t* value; 
         }get_output;
@@ -139,10 +126,6 @@ typedef struct command_result_t{
         struct add_output{
             int error;
         }add_output;
-
-        struct destroy_output{
-            int error;
-        }destroy_output;
 
         struct del_output{
             int error;
@@ -200,10 +183,15 @@ typedef struct execute_result_t{
 
 typedef struct command_registry command_registry;
 
+typedef struct {
+    command_registry* reg;
+    hashtable_t* db;
+} server_context_t;
+
 // PUBLIC API
 
     // EXECUTOR
-    execute_result_t execute_command(command_registry* reg, hashtable_t* context,
+    execute_result_t execute_command(server_context_t* server_ctx,
                                      const char* command_name, int argc, char* argv[],
                                      const size_t arg_lengths[]);
 

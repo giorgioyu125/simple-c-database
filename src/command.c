@@ -5,6 +5,7 @@
 #include "command.h"
 #include "hashtable.h"
 #include "string_functionality.h"
+
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -19,8 +20,6 @@ static int compare_command_names(const void* key, const void* element);
 static command_result_t cmd_get(hashtable_t* context, command_data_t* input);
 static command_result_t cmd_set(hashtable_t* context, command_data_t* input);
 static command_result_t cmd_add(hashtable_t* context, command_data_t* input);
-static command_result_t cmd_create(hashtable_t* context, command_data_t* input);
-static command_result_t cmd_destroy(hashtable_t* context, command_data_t* input);
 static command_result_t cmd_del(hashtable_t* context, command_data_t* input);
 static command_result_t cmd_exist(hashtable_t* context, command_data_t* input);
 static command_result_t cmd_replace(hashtable_t* context, command_data_t* input);
@@ -104,10 +103,11 @@ ssize_t find_command_index(command_registry* reg, const char* command_name) {
     return (ssize_t)(found_command - reg->commands);
 }
 
-    // CMD functions
+    // CMD FUNCTIONS
 
 static command_result_t cmd_get(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL)){
         return result;
     }
@@ -133,13 +133,14 @@ static command_result_t cmd_get(hashtable_t* context, command_data_t* input){
 }
 
 static command_result_t cmd_set(hashtable_t* context, command_data_t* input) {
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL)){
         return result;
     }
 
     const unsigned char* key = input->in.set_input.key;
-    data_entry_t* value = (data_entry_t*)input->in.set_input.value; // !! IMPORTANT
+    data_entry_t* value = (data_entry_t*)input->in.set_input.value;
 
     if ((is_key_valid(key) == false) || (value == NULL)){
         return result;
@@ -153,13 +154,14 @@ static command_result_t cmd_set(hashtable_t* context, command_data_t* input) {
 }
 
 static command_result_t cmd_add(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL)){
         return result;
     }
 
     const unsigned char* key = input->in.set_input.key;
-    data_entry_t* value = (data_entry_t*)input->in.set_input.value; // !! IMPORTANT
+    data_entry_t* value = (data_entry_t*)input->in.set_input.value;
 
     if ((is_key_valid(key) == false) || (value == NULL)){
         return result;
@@ -172,42 +174,9 @@ static command_result_t cmd_add(hashtable_t* context, command_data_t* input){
     return result;
 }
 
-static command_result_t cmd_create(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR , .output = {0} };
-    if ((input == NULL) || (input->in.create_input.db_size == 0) || (context != NULL)){
-        return result;
-    }
-
-    printf("[INFO] cmd_create: Executing CREATE for size: '%zu'.\n", input->in.create_input.db_size);
-
-    hashtable_t* new_context = table_create(input->in.create_input.db_size);
-    if (new_context == NULL){
-        return result;
-    }
-
-    result.type = CMD_TYPE_CREATE;
-    result.output.create_output.hashtable = new_context;
-        
-    return result;
-}
-
-static command_result_t cmd_destroy(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
-    if ((context == NULL) || (input == NULL)){
-        return result;
-    }
-    
-    printf("[INFO] cmd_destroy: Executing DESTROY on context '%p'.\n", (void*)context);
-
-    int error = table_destroy(context, destroy_data_entry);
-
-    result.type = CMD_TYPE_DESTROY;
-    result.output.destroy_output.error = error;
-    return result;
-}
-
 static command_result_t cmd_del(hashtable_t* context, command_data_t* input) {
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL) || (is_key_valid(input->in.del_input.key) == false)) {
         return result;
     }
@@ -229,8 +198,8 @@ static command_result_t cmd_del(hashtable_t* context, command_data_t* input) {
 }
 
 static command_result_t cmd_exist(hashtable_t* context, command_data_t* input) {
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
-
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL) || (is_key_valid(input->in.exist_input.key) == false)) {
         return result;
     }
@@ -248,7 +217,8 @@ static command_result_t cmd_exist(hashtable_t* context, command_data_t* input) {
 }
 
 static command_result_t cmd_replace(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL) || (is_key_valid(input->in.replace_input.key) == false) || 
         (input->in.replace_input.new_value == NULL)){
         return result;
@@ -273,7 +243,8 @@ static command_result_t cmd_replace(hashtable_t* context, command_data_t* input)
 }
 
 static command_result_t cmd_resize(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL) || (input->in.resize_input.new_size == 0)){
         return result;
     }
@@ -296,7 +267,8 @@ static command_result_t cmd_resize(hashtable_t* context, command_data_t* input){
 }
 
 static command_result_t cmd_clear(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL)){
         return result;
     }   
@@ -312,8 +284,8 @@ static command_result_t cmd_clear(hashtable_t* context, command_data_t* input){
 }
 
 static command_result_t cmd_load_factor(hashtable_t* context, command_data_t* input){
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
-
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL)) {
         return result;
     }
@@ -329,7 +301,8 @@ static command_result_t cmd_load_factor(hashtable_t* context, command_data_t* in
 }
 
 static command_result_t cmd_count(hashtable_t* context, command_data_t* input) {
-    command_result_t result = { .type = CMD_TYPE_ERROR, .output = {0} };
+    command_result_t result = {0};
+    result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL)) {
         return result;
     }
@@ -379,18 +352,16 @@ static command_result_t cmd_count(hashtable_t* context, command_data_t* input) {
 static command command_table[] = { // Name needs to be in lexicographic order
     // name         tag                     proc               arity   flags
     //----------------------------------------------------------------------
-    { "ADD",        CMD_TYPE_ADD,           cmd_add,           2,      "wa" },
+    { "ADD",        CMD_TYPE_ADD,           cmd_add,           2,      "wa"},
     { "CLEAR",      CMD_TYPE_CLEAR,         cmd_clear,         0,      "w" },
     { "COUNT",      CMD_TYPE_COUNT,         cmd_count,         1,      "r" },
-    { "CREATE",     CMD_TYPE_CREATE,        cmd_create,        1,      "w" },
     { "DEL",        CMD_TYPE_DEL,           cmd_del,           1,      "w" },
-    { "DESTROY",    CMD_TYPE_DESTROY,       cmd_destroy,       0,      "w" },
     { "EXIST",      CMD_TYPE_EXIST,         cmd_exist,         1,      "r" },
     { "GET",        CMD_TYPE_GET,           cmd_get,           1,      "r" },
     { "LOADFACTOR", CMD_TYPE_LOADFACTOR,    cmd_load_factor,   0,      "r" },
-    { "REPLACE",    CMD_TYPE_REPLACE,       cmd_replace,       2,      "wa" },
+    { "REPLACE",    CMD_TYPE_REPLACE,       cmd_replace,       2,      "wa"},
     { "RESIZE",     CMD_TYPE_RESIZE,        cmd_resize,        1,      "w" },
-    { "SET",        CMD_TYPE_SET,           cmd_set,           2,      "wa" },
+    { "SET",        CMD_TYPE_SET,           cmd_set,           2,      "wa"},
 
     { NULL,         255,                    NULL,              0,      NULL}
 };
@@ -480,7 +451,6 @@ data_type_t stotype(const char* type_str) {
     return DATA_TYPE_ERROR;
 }
 
-
 command_registry* registry_create(){
     command_registry* reg = malloc(sizeof(struct command_registry));
     if (reg == NULL) {
@@ -502,19 +472,8 @@ static int build_command_data(command_data_t* out_data, cmd_function_type tag, c
     out_data->tag = tag;
 
     switch (tag) {
-        case CMD_TYPE_CREATE:{ 
-            char* endptr;
-            unsigned long value = strtoul(argv[0], &endptr, 10);
-            if (endptr == argv[0] || *endptr != '\0'){
-                fprintf(stderr, "[ERROR] build_command_data: Provided size for CREATE is not a valid number: '%s'.\n", argv[0]);
-                return -1; 
-            }
-            out_data->in.create_input.db_size = (size_t)value;
-            break;
-        }
-        
         case CMD_TYPE_SET:
-        case CMD_TYPE_ADD: {
+        case CMD_TYPE_ADD:{
             const unsigned char* key = (const unsigned char*)argv[0];
             if (is_key_valid(key) == false) {
                 fprintf(stderr, "[ERROR] build_command_data: Provided key is not valid.\n");
@@ -524,12 +483,12 @@ static int build_command_data(command_data_t* out_data, cmd_function_type tag, c
             char* endptr;
         
             unsigned long long declared_size = strtoull(argv[1], &endptr, 10);
-            if (endptr == argv[1] || *endptr != '\0') {
+            if (endptr == argv[1] || *endptr != '\0'){
                 fprintf(stderr, "[ERROR] build_command_data: Provided size is not a valid number: '%s'.\n", argv[1]);
                 return -1;
             }
         
-            if (declared_size > MAX_VALUE_SIZE) {
+            if (declared_size > MAX_VALUE_SIZE){
                 fprintf(stderr, "[ERROR] build_command_data: Provided value size exceeds the maximum allowed limit.\n");
                 return -1;
             }
@@ -542,7 +501,7 @@ static int build_command_data(command_data_t* out_data, cmd_function_type tag, c
         
             size_t actual_data_len = args_lengths[3]; 
         
-            if (declared_size != actual_data_len) {
+            if (declared_size != actual_data_len){
                 fprintf(stderr, "[ERROR] build_command_data: Data inconsistency. Declared size %llu, but provided data length is %zu.\n",
                         declared_size, actual_data_len);
                 return -1;
@@ -584,7 +543,7 @@ static int build_command_data(command_data_t* out_data, cmd_function_type tag, c
         case CMD_TYPE_RESIZE:{
             char* endptr;
             unsigned long new_size = strtoul(argv[0], &endptr, 10);
-            if (endptr == argv[0] || *endptr != '\0') {
+            if (endptr == argv[0] || *endptr != '\0'){
                 fprintf(stderr, "[ERROR] build_command_data: Provided size for RESIZE is not a valid number: '%s'.\n", argv[0]);
                 return -1;
             }
@@ -592,10 +551,9 @@ static int build_command_data(command_data_t* out_data, cmd_function_type tag, c
             break;
         }
 
-        case CMD_TYPE_DESTROY:
         case CMD_TYPE_CLEAR:
-        case CMD_TYPE_LOADFACTOR: {
-            out_data->in.destroy_input._dummy = 0;
+        case CMD_TYPE_LOADFACTOR:{
+            out_data->in.load_factor_input._dummy = 0;
             break;
         }
 
@@ -611,9 +569,10 @@ static int build_command_data(command_data_t* out_data, cmd_function_type tag, c
 
         case CMD_TYPE_ERROR:
         case CMD_TYPE_EMPTY:
-        default:
+        default:{
             fprintf(stderr, "[ERROR] build_command_data: Received an unexpected or unsupported command tag: %d.\n", tag);
-            return -1; 
+            return -1;
+        }
     }
 
     return 0;
@@ -640,11 +599,14 @@ static execute_result_t create_error_response(int status, const char* message) {
 
 // PUBLIC API
 
-execute_result_t execute_command(command_registry* reg, hashtable_t* context,
+execute_result_t execute_command(server_context_t* server_ctx,
                                  const char* command_name, int argc, char* argv[],
                                  const size_t arg_lengths[])
 {
-    if (reg == NULL || command_name == NULL) {
+    command_registry* reg = server_ctx->reg;
+    hashtable_t* context = server_ctx->db;
+
+    if ((reg == NULL) || (command_name == NULL)) {
         return create_error_response(400, "Invalid arguments to dispatcher");
     }
 
@@ -653,29 +615,28 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
         return create_error_response(404, "Command not found");
     }
 
-    const command* cmd = &(reg->commands[command_index]); 
+    const command* cmd = &(reg->commands[command_index]);
     if (cmd->arity != argc) {
         return create_error_response(400, "Incorrect number of arguments");
     }
 
     command_data_t command_inputs = {0};
-    if (build_command_data(&command_inputs, cmd->tag, argv, arg_lengths) != 0) {
+    if (build_command_data(&command_inputs, cmd->tag, argv, arg_lengths) != 0){
         return create_error_response(400, "Invalid argument format");
     }
+    
+    command_result_t cmd_result = cmd->proc(context, &command_inputs);
 
-    command_result_t cmd_result = cmd->proc(context, &command_inputs); // CMD execution
-
-    if (strchr(cmd->flags, 'a') != NULL) {
+    if (strchr(cmd->flags, 'a') != NULL){
         int error = cmd_result.output.set_output.error;
-        if (error != 0 && command_inputs.in.set_input.value != NULL) {
+        if (error != 0 && command_inputs.in.set_input.value != NULL){
             free(command_inputs.in.set_input.value);
         }
     }
-
-    execute_result_t final_result = { .status_code = 200 }; 
-
-    switch (cmd_result.type) {
-        case CMD_TYPE_GET: { 
+    
+    execute_result_t final_result = { .status_code = 200 };
+    switch (cmd_result.type){
+        case CMD_TYPE_GET:{ 
             data_entry_t* value = cmd_result.output.get_output.value;
             final_result.body = (unsigned char*)value; 
             final_result.body_length = sizeof(data_entry_t) + value->size;
@@ -688,11 +649,10 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
         case CMD_TYPE_DEL:
         case CMD_TYPE_REPLACE:
         case CMD_TYPE_RESIZE:
-        case CMD_TYPE_CLEAR:
-        case CMD_TYPE_DESTROY: {
-            if (cmd_result.output.set_output.error != 0) {
+        case CMD_TYPE_CLEAR:{
+            if (cmd_result.output.set_output.error != 0){
                 return create_error_response(409, "Operation failed");
-            } else {
+            } else{
                 final_result.body = ustrdup("OK");
                 if (final_result.body == NULL) return create_error_response(500, "Out of memory");
                 final_result.body_length = ustrlen(final_result.body);
@@ -701,7 +661,7 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
             break;
         }
 
-        case CMD_TYPE_EXIST: {
+        case CMD_TYPE_EXIST:{
             final_result.body = ustrdup(cmd_result.output.exist_output.existence ? "1" : "0");
             if (final_result.body == NULL) return create_error_response(500, "Out of memory");
             final_result.body_length = ustrlen(final_result.body);
@@ -709,15 +669,7 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
             break;
         }
 
-        case CMD_TYPE_CREATE: {
-            final_result.body = ustrdup("OK");
-            if (final_result.body == NULL) return create_error_response(500, "Out of memory");
-            final_result.body_length = ustrlen(final_result.body);
-            final_result.content_type = DATA_TYPE_STRING;
-            break;
-        }
-
-        case CMD_TYPE_COUNT: {
+        case CMD_TYPE_COUNT:{
             char text_buffer[64];
             switch (cmd_result.output.count_output.out_type) {
                 case DATA_TYPE_DOUBLE:
@@ -731,7 +683,7 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
             }
 
             final_result.body = ustrdup(text_buffer);
-            if (final_result.body == NULL) {
+            if (final_result.body == NULL){
                 return create_error_response(500, "Out of memory");
             }
            final_result.body_length = ustrlen(final_result.body);
@@ -739,7 +691,7 @@ execute_result_t execute_command(command_registry* reg, hashtable_t* context,
             break;
         }
 
-        case CMD_TYPE_LOADFACTOR: {
+        case CMD_TYPE_LOADFACTOR:{
             char buffer[64];
             snprintf(buffer, sizeof(buffer), "%.4f", cmd_result.output.load_factor_output.load_factor);
 

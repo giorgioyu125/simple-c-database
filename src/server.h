@@ -7,33 +7,27 @@
 #include <llhttp.h>
 #include "command.h"
 
+
 // Macro
 
 #define MAX_URL_LENGTH 1024
 
+
 // Data
 
 typedef struct {
-    command_registry* reg;
-    hashtable_t* db;
-} server_context_t;
-
-typedef struct {
     uv_stream_t* client_stream;
-    llhttp_t parser;
-    llhttp_settings_t parser_settings;
     server_context_t* server_ctx;
 
-    char url_buffer[MAX_URL_LENGTH];
-    size_t url_len;
-    char body_buffer[MAX_VALUE_SIZE];
-    size_t body_len;
+    char buffer[MAX_VALUE_SIZE];
+    size_t buffer_len;
 } my_client_context_t;
 
 typedef struct {
     uv_write_t req;
     uv_buf_t buf;
 } write_req_t;
+
 
 // Public API
     void on_new_connection(uv_stream_t *server, int status);
