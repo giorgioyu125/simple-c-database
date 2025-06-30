@@ -18,6 +18,17 @@
 #define MAX_TOKENS 10
 #define MAX_COUNT_TYPE_SIZE 32 // Consider to update this if you increase the count Instruction Set
 
+
+    // TCP POSSIBILE RESPONSE
+
+    #define TCP_SUCCESS "OK"
+    #define TCP_OPERATION_FAILED "Operation failed"
+    #define TCP_KEY_NOT_FOUND "Key not found"
+    #define TCP_INTERNAL_ERROR "Internal server error"
+    #define TCP_NON_DEFAULT_T "Internal error: unhandled result type"
+    #define TCP_COUNT_ERROR "Internal error: Unknown COUNT result type"
+    #define TCP_MEMORY_ERROR "Out of memory"
+
 // DATA
 
 typedef enum : uint8_t{
@@ -183,7 +194,9 @@ typedef struct execute_result_t{
 
 typedef struct command_registry command_registry;
 
-typedef struct {
+// DATABASE CONTEXT
+
+typedef struct server_context_t{
     command_registry* reg;
     hashtable_t* db;
 } server_context_t;

@@ -34,6 +34,7 @@ target_compile_options(${EXECUTABLE_NAME} PRIVATE
     -Wnull-dereference
     -Wformat=2
     -Wformat-security
+    -luv
 )
 
 option(ENABLE_WERROR "Treat warnings as errors" OFF)

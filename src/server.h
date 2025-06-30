@@ -11,7 +11,7 @@
 // Macro
 
 #define MAX_URL_LENGTH 1024
-
+#define INACTIVITY_TIMEOUT (60 * 1000)
 
 // Data
 
@@ -21,6 +21,8 @@ typedef struct {
 
     char buffer[MAX_VALUE_SIZE];
     size_t buffer_len;
+
+    uv_timer_t inactivity_timer;
 } my_client_context_t;
 
 typedef struct {
@@ -31,7 +33,7 @@ typedef struct {
 
 // Public API
     void on_new_connection(uv_stream_t *server, int status);
-    void on_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf);
+    void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf);
     void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf);
     void on_close(uv_handle_t* handle);
     void on_close(uv_handle_t* handle);

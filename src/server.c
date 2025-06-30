@@ -1,4 +1,3 @@
-#include <sys/param.h>
 #include <uv.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,14 +8,26 @@
 #include "string_functionality.h"
 #include "server.h"
 
-
+void on_timer_close(uv_handle_t* handle) {
+    (void)handle;
+}
 
 void on_close(uv_handle_t* handle) {
-    if (handle->data) {
-        free(handle->data);
+    my_client_context_t* ctx = handle->data;
+    if (ctx) {
+        if (uv_is_closing((uv_handle_t*)&ctx->inactivity_timer) == 0) {
+            uv_close((uv_handle_t*)&ctx->inactivity_timer, on_timer_close);
+        }
+        free(ctx);
     }
     free(handle);
-    printf("[INFO] Connessione e contesto liberati.\n");
+    printf("[INFO] on_close: Client context freed.\n");
+}
+
+void on_client_timeout(uv_timer_t* timer) {
+    my_client_context_t* ctx = timer->data;
+    printf("[INFO] Inactive client. Closing connection.\n");
+    uv_close((uv_handle_t*)ctx->client_stream, on_close);
 }
 
 void on_write_complete(uv_write_t* req, int status) {
@@ -25,10 +36,9 @@ void on_write_complete(uv_write_t* req, int status) {
     free(wr);
 
     if (status < 0) {
-        fprintf(stderr, "[ERROR] Errore di scrittura: '%s'.\n", uv_strerror(status));
+        fprintf(stderr, "[ERROR] on_write_complete: '%s'.\n", uv_strerror(status));
+        uv_close((uv_handle_t*)req->handle, on_close);
     }
-
-    uv_close((uv_handle_t*)req->handle, on_close);
 }
 
 void alloc_buffer(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
@@ -38,18 +48,22 @@ void alloc_buffer(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
 }
 
 void process_and_execute_command(my_client_context_t* ctx, char* command_line) {
-    printf("[INFO] Execution with the following command_line: %s\n", command_line);
+    printf("[INFO] Execution with the following command_line: '%s'\n", command_line);
 
     char* argv[MAX_TOKENS];
     int argc_with_command = tokenize_string(" ", command_line, MAX_TOKENS, argv);
 
     if (argc_with_command == 0) {
-        return; 
+        return;
     }
 
     char* command_name = argv[0];
     int argc = argc_with_command - 1;
-    char** command_argv = (argc > 0) ? &argv[1] : NULL;
+
+    char** command_argv = &argv[1];
+    if (argc == 0){
+        command_argv = NULL;
+    }
 
     size_t arg_lengths[MAX_TOKENS];
     for (int i = 0; i < argc; i++) {
@@ -62,8 +76,8 @@ void process_and_execute_command(my_client_context_t* ctx, char* command_line) {
     const char* response_body = (const char*)result.body;
     size_t body_len = result.body_length;
 
-    char* response_str = malloc(body_len + 2); 
-    if (!response_str) {
+    char* response_str = malloc(body_len + 2);
+    if (response_str == NULL){
         free_execute_result(&result);
         uv_close((uv_handle_t*)ctx->client_stream, on_close);
         return;
@@ -74,31 +88,37 @@ void process_and_execute_command(my_client_context_t* ctx, char* command_line) {
     response_str[body_len + 1] = '\0';
 
     write_req_t* req = (write_req_t*)malloc(sizeof(write_req_t));
-    req->buf = uv_buf_init(response_str, body_len + 1);
-
+    req->buf = uv_buf_init(response_str, (unsigned int)body_len + 1);
     req->req.data = ctx->client_stream;
 
-    uv_write((uv_write_t*)req, ctx->client_stream, &req->buf, 1, on_write_complete);
+    int write_status = uv_write((uv_write_t*)req, ctx->client_stream, &req->buf, 1, on_write_complete);
+    if (write_status < 0) {
+        fprintf(stderr, "[ERROR] process_and_execute_command: uv_write failed immediately: %s\n", uv_strerror(write_status));
+        free(req->buf.base);
+        free(req);
+        uv_close((uv_handle_t*)ctx->client_stream, on_close);
+    }
 
     free_execute_result(&result);
 }
 
-void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
+void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf){
     my_client_context_t* ctx = (my_client_context_t*)client->data;
 
-    if (nread > 0) {
-        if (ctx->buffer_len + nread > MAX_VALUE_SIZE) {
-            fprintf(stderr, "[ERROR] Richiesta troppo grande. Chiusura connessione.\n");
+    if (nread > 0){
+        uv_timer_start(&ctx->inactivity_timer, on_client_timeout, INACTIVITY_TIMEOUT, 0);
+
+        if (ctx->buffer_len + (size_t)nread > MAX_VALUE_SIZE) {
+            fprintf(stderr, "[ERROR] on_read: Request too large. Closing connection.\n");
             uv_close((uv_handle_t*)client, on_close);
-            return;
+            goto cleanup;
         }
 
-        memcpy(ctx->buffer + ctx->buffer_len, buf->base, nread);
-        ctx->buffer_len += nread;
+        memcpy(ctx->buffer + ctx->buffer_len, buf->base, (size_t)nread);
+        ctx->buffer_len += (size_t)nread;
 
         char* newline_pos;
         while ((newline_pos = memchr(ctx->buffer, '\n', ctx->buffer_len)) != NULL) {
-
             *newline_pos = '\0';
             char* command_line = ctx->buffer;
 
@@ -108,14 +128,22 @@ void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
             memmove(ctx->buffer, newline_pos + 1, remaining_len);
             ctx->buffer_len = remaining_len;
         }
-
-    } else if (nread < 0) {
-        if (nread != UV_EOF) {
-            fprintf(stderr, "[ERROR] Errore di lettura: %s\n", uv_strerror((int)nread));
+    } else if (nread < 0){
+        uv_timer_stop(&ctx->inactivity_timer);
+        if (nread == UV_EOF){
+            if (ctx->buffer_len > 0){
+                ctx->buffer[ctx->buffer_len] = '\0';
+                process_and_execute_command(ctx, ctx->buffer);
+            } else {
+                uv_close((uv_handle_t*)client, on_close);
+            }
+        } else {
+            fprintf(stderr, "[ERROR] on_read: '%s'\n", uv_strerror((int)nread));
+            uv_close((uv_handle_t*)client, on_close);
         }
-        uv_close((uv_handle_t*)client, on_close);
     }
 
+cleanup:
     if (buf->base) {
         free(buf->base);
     }
@@ -123,12 +151,14 @@ void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
 
 void on_new_connection(uv_stream_t* server, int status) {
     if (status < 0) {
-        fprintf(stderr, "[ERROR] on_new_connection: %s\n", uv_strerror(status));
+        fprintf(stderr, "[ERROR] on_new_connection: %s.\n", uv_strerror(status));
         return;
     }
 
     uv_tcp_t* client = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
-    if (client == NULL) return;
+    if (client == NULL) {
+        return;
+    }
     uv_tcp_init(uv_default_loop(), client);
 
     if (uv_accept(server, (uv_stream_t*)client) == 0) {
@@ -137,9 +167,14 @@ void on_new_connection(uv_stream_t* server, int status) {
             uv_close((uv_handle_t*)client, on_close);
             return;
         }
+
         ctx->client_stream = (uv_stream_t*)client;
         ctx->server_ctx = server->data;
         client->data = ctx;
+
+        uv_timer_init(uv_default_loop(), &ctx->inactivity_timer);
+        ctx->inactivity_timer.data = ctx;
+        uv_timer_start(&ctx->inactivity_timer, on_client_timeout, INACTIVITY_TIMEOUT, 0);
 
         uv_read_start((uv_stream_t*)client, alloc_buffer, on_read);
     } else {
