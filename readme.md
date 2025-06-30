@@ -7,10 +7,6 @@ A lightweight, in-memory key-value database implemented in C. It utilizes a hash
 
 *   **In-Memory Storage**: Data is stored efficiently in memory using a hash table with separate chaining.
 *   **Core Operations**: Supports fundamental CRUD operations via http request:
-    *   `SET <Key> <Datatype:Value>` (Type `help datatypes` for a list of supported data types)
-    *   `GET <Key>`
-    *   `DEL <Key>`
-    *   `EXISTS <Key>`
 *   **Command-Line Interface (CLI)**: Provides an interactive shell for easy database manipulation.
 *   **Data Persistence**: Offers `SAVE` and `LOAD` commands to persist data to and restore data from a file.
 *   **C Implementation**: Written entirely in standard C (C23).
@@ -25,41 +21,36 @@ A lightweight, in-memory key-value database implemented in C. It utilizes a hash
 
 This project uses CMake to manage the build process.
 
-1.  **Clone the repository (if you haven't already):**
-    ```bash
-    git clone <your-repository-url>
-    cd <repository-directory>
+1.  Ensure you have the necessary tools for your Linux distribution to use CMake. It is also highly recommended to have a well-configured desktop and shell environment.
+    ```
+    sudo apt update
+    sudo apt install build-essential cmake
     ```
 
-2.  **Create a build directory and navigate into it:**
-    It's good practice to build outside the source directory.
-    ```bash
+2.  To ensure a clean build without obsolete files, it is good practice to remove the old build directory and clone the repository into an empty directory with `git clone <project_link>`. Alternatively, this command deletes the `build` folder and all its contents, preparing you for a reconfiguration from scratch.
+    ```
+    rm -rf build
+    ```
+
+3.  It is good practice to use a separate directory for compilation files, keeping the main project folder clean. This approach is known as an "out-of-source build," a practice I also follow in the project's development.
+    ```
     mkdir build
-    cd build
     ```
 
-3.  **Configure the project with CMake:**
-    This step generates the build files (e.g., Makefiles).
-    ```bash
+4.  From the `/build` directory, run CMake. The `cmake ..` command tells CMake to look for the `CMakeLists.txt` file in the parent directory and to generate the necessary Makefiles for compilation inside the current `build` folder.
+    ```
     cmake ..
     ```
 
-4.  **Compile the project:**
-    ```bash
-    cmake --build .
-    # Or if you have already generated makefiles:
-    # make
+5.  Now that the Makefiles are ready, run the `make` command. This will start the compilation process for all source files. Upon completion, you will find the final executable, named `simple_c_database`, directly in the `build` folder.
+    Execute this command in the `build/` folder, which is located as a subdirectory of the cloned project repository:
     ```
-
-5.  **Run the executable:**
-    ```bash
-    ./your_executable_name
-    # Example: ./key_value_db
+    make
     ```
 
 ## Usage
 
-Once built, run the executable to start the CLI. You can then use the commands listed in the "Features" section. Type `HELP` within the CLI for a list of available commands and `HELP DATATYPES` for information on supported data types.
+You can simply execute and run the server with the command ./simple_c_database <BUCKET_NUMBER> in the build directory. The number of bucket is the number of high-speed unit preallocated in the database, they all can store a maximum of 4 values by default, but you can change this number in the MACRO section of the command.c in the part that says: #define BUCKET_CAPACITY 4. (Substitute 4 with the desidered but 6 and 8 are the most reliable and efficent for simd optimization.)
 
 ---
 
