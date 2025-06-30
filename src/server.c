@@ -9,25 +9,29 @@
 #include "server.h"
 
 void on_timer_close(uv_handle_t* handle) {
-    (void)handle;
+    my_client_context_t* ctx = (my_client_context_t*)handle->data;
+    free(ctx);
+    printf("[DEBUG] on_timer_close: Timer closed. Server context freed.\n");
 }
 
-void on_close(uv_handle_t* handle) {
+void on_client_close(uv_handle_t* handle) {
     my_client_context_t* ctx = handle->data;
+
+    printf("[DEBUG] on_client_close: Client stream closed. Freeing tcp handle.\n");
+    free(handle); 
+
     if (ctx) {
-        if (uv_is_closing((uv_handle_t*)&ctx->inactivity_timer) == 0) {
+        if (!uv_is_closing((uv_handle_t*)&ctx->inactivity_timer)) {
+            printf("[DEBUG] on_client_close: Starting timer closing.\n");
             uv_close((uv_handle_t*)&ctx->inactivity_timer, on_timer_close);
         }
-        free(ctx);
     }
-    free(handle);
-    printf("[INFO] on_close: Client context freed.\n");
 }
 
 void on_client_timeout(uv_timer_t* timer) {
     my_client_context_t* ctx = timer->data;
     printf("[INFO] Inactive client. Closing connection.\n");
-    uv_close((uv_handle_t*)ctx->client_stream, on_close);
+    uv_close((uv_handle_t*)ctx->client_stream, on_client_close);
 }
 
 void on_write_complete(uv_write_t* req, int status) {
@@ -37,7 +41,7 @@ void on_write_complete(uv_write_t* req, int status) {
 
     if (status < 0) {
         fprintf(stderr, "[ERROR] on_write_complete: '%s'.\n", uv_strerror(status));
-        uv_close((uv_handle_t*)req->handle, on_close);
+        uv_close((uv_handle_t*)req->handle, on_client_close);
     }
 }
 
@@ -79,7 +83,7 @@ void process_and_execute_command(my_client_context_t* ctx, char* command_line) {
     char* response_str = malloc(body_len + 2);
     if (response_str == NULL){
         free_execute_result(&result);
-        uv_close((uv_handle_t*)ctx->client_stream, on_close);
+        uv_close((uv_handle_t*)ctx->client_stream, on_client_close);
         return;
     }
 
@@ -96,7 +100,7 @@ void process_and_execute_command(my_client_context_t* ctx, char* command_line) {
         fprintf(stderr, "[ERROR] process_and_execute_command: uv_write failed immediately: %s\n", uv_strerror(write_status));
         free(req->buf.base);
         free(req);
-        uv_close((uv_handle_t*)ctx->client_stream, on_close);
+        uv_close((uv_handle_t*)ctx->client_stream, on_client_close);
     }
 
     free_execute_result(&result);
@@ -110,7 +114,7 @@ void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf){
 
         if (ctx->buffer_len + (size_t)nread > MAX_VALUE_SIZE) {
             fprintf(stderr, "[ERROR] on_read: Request too large. Closing connection.\n");
-            uv_close((uv_handle_t*)client, on_close);
+            uv_close((uv_handle_t*)client, on_client_close);
             goto cleanup;
         }
 
@@ -135,11 +139,11 @@ void on_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf){
                 ctx->buffer[ctx->buffer_len] = '\0';
                 process_and_execute_command(ctx, ctx->buffer);
             } else {
-                uv_close((uv_handle_t*)client, on_close);
+                uv_close((uv_handle_t*)client, on_client_close);
             }
         } else {
             fprintf(stderr, "[ERROR] on_read: '%s'\n", uv_strerror((int)nread));
-            uv_close((uv_handle_t*)client, on_close);
+            uv_close((uv_handle_t*)client, on_client_close);
         }
     }
 
@@ -164,7 +168,7 @@ void on_new_connection(uv_stream_t* server, int status) {
     if (uv_accept(server, (uv_stream_t*)client) == 0) {
         my_client_context_t* ctx = calloc(1, sizeof(my_client_context_t));
         if (ctx == NULL) {
-            uv_close((uv_handle_t*)client, on_close);
+            uv_close((uv_handle_t*)client, on_client_close);
             return;
         }
 
@@ -178,7 +182,7 @@ void on_new_connection(uv_stream_t* server, int status) {
 
         uv_read_start((uv_stream_t*)client, alloc_buffer, on_read);
     } else {
-        uv_close((uv_handle_t*)client, on_close);
+        uv_close((uv_handle_t*)client, on_client_close);
     }
 }
 

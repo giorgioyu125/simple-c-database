@@ -13,7 +13,7 @@
 #define LIKELY(x)       __builtin_expect(!!(x), 1)
 #define UNLIKELY(x)     __builtin_expect(!!(x), 0)
 
-#define BUCKET_CAPACITY 8
+#define BUCKET_CAPACITY 4
 
 // DATA
 
