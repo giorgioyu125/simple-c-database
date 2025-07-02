@@ -1,3 +1,4 @@
+.cache/
 db_snapshot.db
 *.out
 persistance.txt

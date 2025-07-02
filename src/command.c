@@ -35,7 +35,7 @@ static execute_result_t create_error_response(int status, const char* message);
 // IMPLEMENTATION
 
 void free_execute_result(execute_result_t* result){
-    if (result == NULL) {
+    if (result == NULL){
         return;
     }
 
@@ -45,8 +45,8 @@ void free_execute_result(execute_result_t* result){
     result->body_length = 0; 
 }
 
-size_t std_value_sizer(const void* value) {
-    if (value == NULL) {
+size_t std_value_sizer(const void* value){
+    if (value == NULL){
         return 0;
     }
 
@@ -55,8 +55,8 @@ size_t std_value_sizer(const void* value) {
     return sizeof(data_entry_t) + entry->size;
 }
 
-void destroy_data_entry(void* value) {
-    if (value == NULL) {
+void destroy_data_entry(void* value){
+    if (value == NULL){
         return;
     }
 
@@ -64,7 +64,7 @@ void destroy_data_entry(void* value) {
     return;
 }
 
-struct command_registry {
+struct command_registry{
     struct command* commands;
     size_t count;
 };
