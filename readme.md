@@ -6,9 +6,9 @@ A lightweight, in-memory key-value database implemented in C. It utilizes a hash
 ## Features
 
 *   **In-Memory Storage**: Data is stored efficiently in memory using a hash table with separate chaining.
-*   **Core Operations**: Supports fundamental CRUD operations via http request:
+*   **Core Operations**: Supports fundamental CRUD operations via tcp request. (I suggest using netcat for testing)
 *   **Command-Line Interface (CLI)**: Provides an interactive shell for easy database manipulation.
-*   **Data Persistence**: Offers `SAVE` and `LOAD` commands to persist data to and restore data from a file.
+*   (TODO) **Data Persistence**: Offers `SAVE` and `LOAD` commands to persist data to and restore data from a file.
 *   **C Implementation**: Written entirely in standard C (C23).
 *   **CMake Build System**: Modern and flexible build process managed by CMake.
 
@@ -55,7 +55,8 @@ You can simply execute and run the server with the command ./simple_c_database <
 ---
 
 ## For Developers
-
+      Hi dear Developer! If you are using clangd as LSP you'll obviusly need to create a symlink between the compile_commands.json in the build/ and the root dir. 
+      There is no need to thank me!
 ### Contributing
 Please contact me in private so we can discuss about your contribution. (Email: sabert148@gmail.com ,Discord: jonsnow0036)
     
