@@ -220,7 +220,7 @@ static command_result_t cmd_replace(hashtable_t* context, command_data_t* input)
     command_result_t result = {0};
     result.type = CMD_TYPE_ERROR;
     if ((context == NULL) || (input == NULL) || (is_key_valid(input->in.replace_input.key) == false) || 
-        (input->in.replace_input.new_value != NULL)){
+        (input->in.replace_input.new_value == NULL)){
         return result;
     }
 
@@ -502,8 +502,10 @@ static int build_command_data(cmd_function_type tag, char* argv[], const size_t 
             
             size_t actual_data_len = args_lengths[3]; 
             if (declared_size != actual_data_len){
-                fprintf(stderr, "[ERROR] build_command_data: Data inconsistency. Declared size %llu, but provided data length is %zu.\n",
-                        declared_size, actual_data_len);
+                fprintf(stderr, 
+                        "[ERROR] build_command_data: Data inconsistency. Declared size %llu, but provided data length is %zu.\n",
+                        declared_size, 
+                        actual_data_len);
                 return -1;
             }
             

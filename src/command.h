@@ -14,20 +14,20 @@
 
 // MACRO
 
-#define MAX_VALUE_SIZE 2097152
-#define MAX_TOKENS 10
-#define MAX_COUNT_TYPE_SIZE 32 // Consider to update this if you increase the count Instruction Set
+#define MAX_VALUE_SIZE      2097152
+#define MAX_TOKENS          10
+#define MAX_COUNT_TYPE_SIZE 32      // Consider to update this if you increase the count Instruction Set
 
 
     // TCP POSSIBILE RESPONSE
 
-    #define TCP_SUCCESS "OK"
-    #define TCP_OPERATION_FAILED "Operation failed"
-    #define TCP_KEY_NOT_FOUND "Key not found"
-    #define TCP_INTERNAL_ERROR "Internal server error"
-    #define TCP_NON_DEFAULT_T "Internal error: unhandled result type"
-    #define TCP_COUNT_ERROR "Internal error: Unknown COUNT result type"
-    #define TCP_MEMORY_ERROR "Out of memory"
+    #define TCP_SUCCESS           "OK"
+    #define TCP_OPERATION_FAILED  "Operation failed"
+    #define TCP_KEY_NOT_FOUND     "Key not found"
+    #define TCP_INTERNAL_ERROR    "Internal server error"
+    #define TCP_NON_DEFAULT_T     "Internal error: unhandled result type"
+    #define TCP_COUNT_ERROR       "Internal error: Unknown COUNT result type"
+    #define TCP_MEMORY_ERROR      "Out of memory"
 
 // DATA
 
@@ -101,7 +101,7 @@ typedef struct command_data_t{ // Command necessary input
 
         struct replace_input{
             const unsigned char* key;
-            data_type_t* new_value;
+            data_entry_t* new_value;
         }replace_input;
 
         struct resize_input{

@@ -99,6 +99,20 @@ int ustrcmp(const unsigned char* s1, const unsigned char* s2){
     return (int)(*s1) - (int)(*s2);
 }
 
+ssize_t strscpy(char* d, const char* s, size_t n){
+  size_t i;
+
+  for (i = 0; i < n; i++)
+    if ('\0' == (d[i] = s[i]))
+      return i > SSIZE_MAX ? -1 : (ssize_t) i;
+
+  if (i == 0)
+    return 0;
+
+  d[--i] = '\0';
+  return -1;
+}
+
 bool is_key_valid(const unsigned char* key){
     return ((key != NULL) && (key[0] != '\0'));
 }

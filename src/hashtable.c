@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 
+
 // Lifecycle
 hashtable_t* table_create(size_t initial_capacity){
     if (initial_capacity == 0){
@@ -17,6 +18,15 @@ hashtable_t* table_create(size_t initial_capacity){
     if (new_hashtable == NULL){
         return NULL;
     }
+
+    #if ENABLE_ONLY_POWER_2_SIZE
+    if ((initial_capacity & (initial_capacity - 1)) != 0){
+        initial_capacity = next_power_of_2(initial_capacity);
+        fprintf(stderr, "[INFO] Requested capacity %zu is not a power of two. Adjusting to %zu for performance mode.\n",
+                __atomic_load_n(&new_hashtable->elem_count, __ATOMIC_RELAXED),
+                initial_capacity);
+    }
+    #endif
 
     new_hashtable->elem_count = 0;
     new_hashtable->buckets_count = initial_capacity;
@@ -118,9 +128,9 @@ int table_clear(hashtable_t* table, void (*value_destroyer)(void*)) {
     return 0; 
 }
 
-int table_resize(hashtable_t* table, size_t new_capacity){
+int table_resize(hashtable_t* table, size_t new_capacity) {
     if ((table == NULL) || (new_capacity == 0)){
-        return -1; 
+        return -1;
     }
 
     if (new_capacity < table->elem_count){
@@ -128,55 +138,78 @@ int table_resize(hashtable_t* table, size_t new_capacity){
     }
 
     if (new_capacity == table->buckets_count){
-        return 0; 
+        return 0;
     }
+    
+    #if ENABLE_ONLY_POWER_2_SIZE
+    if ((new_capacity & (new_capacity - 1)) != 0){
+        new_capacity = next_power_of_2(new_capacity);
+        fprintf(stderr, "[INFO] Requested capacity %zu is not a power of two. Adjusting to %zu for performance mode.\n",
+                __atomic_load_n(&table->elem_count, __ATOMIC_RELAXED),
+                new_capacity);
+    }
+    #endif
 
     for (size_t i = 0; i < table->lock_count; ++i){
-        if (pthread_rwlock_wrlock(&table->locks[i]) != 0) {
+        if (pthread_rwlock_wrlock(&table->locks[i]) != 0){
+            fprintf(stderr, "[ERROR] table_resize: Failed to acquire lock %zu.\n", i);
             for (size_t j = 0; j < i; ++j) {
                 pthread_rwlock_unlock(&table->locks[j]);
             }
-
-            return -1; 
+            return -1;
         }
     }
 
     hashtable_bucket_t* new_buckets = calloc(new_capacity, sizeof(hashtable_bucket_t));
-    if (new_buckets == NULL) {
-        for (size_t i = 0; i < table->lock_count; i++){
-            pthread_rwlock_unlock(&table->locks[i]);
-        }
+    if (new_buckets == NULL){
+        fprintf(stderr, "[ERROR] table_resize: Failed to allocate new buckets.\n");
+        for (size_t i = 0; i < table->lock_count; ++i) pthread_rwlock_unlock(&table->locks[i]);
         return -1;
+    }
+
+    pthread_rwlock_t* new_locks = malloc(new_capacity * sizeof(pthread_rwlock_t));
+    if (new_locks == NULL){
+        fprintf(stderr, "[ERROR] table_resize: Failed to allocate new locks.\n");
+        free(new_buckets); 
+        for (size_t i = 0; i < table->lock_count; ++i) pthread_rwlock_unlock(&table->locks[i]);
+        return -1;
+    }
+
+    for (size_t i = 0; i < new_capacity; i++){
+        if (pthread_rwlock_init(&new_locks[i], NULL) != 0){
+            fprintf(stderr, "[ERROR] table_resize: Failed to initialize new lock.\n");
+            for (size_t j = 0; j < i; j++) pthread_rwlock_destroy(&new_locks[j]);
+            free(new_locks);
+            free(new_buckets);
+            for (size_t k = 0; k < table->lock_count; ++k) pthread_rwlock_unlock(&table->locks[k]);
+            return -1;
+        }
     }
 
     for (size_t i = 0; i < table->buckets_count; ++i){
         for (size_t j = 0; j < BUCKET_CAPACITY; ++j){
             if (table->buckets[i].in_use[j]){
 
-                const char* key = (const char*)table->buckets[i].keys[j];
                 uint64_t hash = table->buckets[i].hashes[j];
-
                 size_t new_bucket_index = hash % new_capacity;
-
                 int inserted = 0;
-                for (size_t k = 0; k < BUCKET_CAPACITY; ++k) {
-                    if (!new_buckets[new_bucket_index].in_use[k]) {
+                for (size_t k = 0; k < BUCKET_CAPACITY; ++k){
+                    if (new_buckets[new_bucket_index].in_use[k] == 0){
                         new_buckets[new_bucket_index].in_use[k] = 1;
                         new_buckets[new_bucket_index].hashes[k] = hash;
                         new_buckets[new_bucket_index].values[k] = table->buckets[i].values[j];
-
-                        memcpy(new_buckets[new_bucket_index].keys[k], key, KEY_MAX_LEN);
+                        memcpy(new_buckets[new_bucket_index].keys[k], table->buckets[i].keys[j], KEY_MAX_LEN);
                         inserted = 1;
                         break;
                     }
                 }
+                if (inserted == 0){
+                    fprintf(stderr, "[FATAL] table_resize: Rehashing failed, bucket full.\n");
 
-                if (!inserted) {
+                    for(size_t k = 0; k < new_capacity; ++k) pthread_rwlock_destroy(&new_locks[k]);
+                    free(new_locks);
                     free(new_buckets);
-                    for (size_t k = 0; k < table->lock_count; ++k){
-                        pthread_rwlock_unlock(&table->locks[k]);
-                    }
-
+                    for (size_t k = 0; k < table->lock_count; ++k) pthread_rwlock_unlock(&table->locks[k]);
                     return -1;
                 }
             }
@@ -189,31 +222,18 @@ int table_resize(hashtable_t* table, size_t new_capacity){
 
     table->buckets = new_buckets;
     table->buckets_count = new_capacity;
+    table->locks = new_locks;
+    table->lock_count = new_capacity;
 
-    for (size_t i = 0; i < old_lock_count; ++i) {
+    for (size_t i = 0; i < old_lock_count; ++i){
         pthread_rwlock_unlock(&old_locks[i]);
     }
 
-    for (size_t i = 0; i < old_lock_count; ++i) {
+    for (size_t i = 0; i < old_lock_count; ++i){
         pthread_rwlock_destroy(&old_locks[i]);
     }
-
     free(old_locks);
     free(old_buckets);
-
-    table->locks = malloc(new_capacity * sizeof(pthread_rwlock_t));
-    if (!table->locks) {
-        fprintf(stderr, "[FATAL]: Failed to allocate new locks during resize.\n");
-        return -1; 
-    }
-
-    table->lock_count = new_capacity;
-    for (size_t i = 0; i < new_capacity; i++) {
-        if (pthread_rwlock_init(&table->locks[i], NULL) != 0) {
-            fprintf(stderr, "[FATAL]: Failed to initialize new locks during resize.\n");
-            return -1;
-        }
-    }
 
     return 0; 
 }
@@ -226,7 +246,12 @@ int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*
     }
 
     unsigned long hash_full = hash(key);
+
+    #if defined(ENABLE_ONLY_POWER_2_SIZE) && (ENABLE_ONLY_POWER_2_SIZE == 1)
+    size_t bucket_index = hash_full & (table->buckets_count - 1);
+    #else
     size_t bucket_index = hash_full % table->buckets_count;
+    #endif
 
     if (pthread_rwlock_wrlock(&table->locks[bucket_index]) != 0){
         return -1;
@@ -278,7 +303,11 @@ void* table_get(hashtable_t* table, const unsigned char* key, size_t (*value_siz
     }
 
     uint64_t hash_full = hash(key);
+    #if defined(ENABLE_ONLY_POWER_2_SIZE) && (ENABLE_ONLY_POWER_2_SIZE == 1)
+    size_t bucket_index = hash_full & (table->buckets_count - 1);
+    #else
     size_t bucket_index = hash_full % table->buckets_count;
+    #endif
 
     hashtable_bucket_t* bucket = &table->buckets[bucket_index];
 
@@ -327,7 +356,11 @@ int table_delete(hashtable_t* table, const unsigned char* key, void (*value_dest
     }
 
     uint64_t hash_full = hash(key);
+    #if defined(ENABLE_ONLY_POWER_2_SIZE) && (ENABLE_ONLY_POWER_2_SIZE == 1)
+    size_t bucket_index = hash_full & (table->buckets_count - 1);
+    #else
     size_t bucket_index = hash_full % table->buckets_count;
+    #endif
 
     if (pthread_rwlock_wrlock(&table->locks[bucket_index]) != 0) {
         return -2; 
@@ -366,7 +399,11 @@ bool table_exist(hashtable_t* table, const unsigned char* key){
     }
 
     uint64_t hash_full = hash(key);
+    #if defined(ENABLE_ONLY_POWER_2_SIZE) && (ENABLE_ONLY_POWER_2_SIZE == 1)
+    size_t bucket_index = hash_full & (table->buckets_count - 1);
+    #else
     size_t bucket_index = hash_full % table->buckets_count;
+    #endif
 
     if (pthread_rwlock_rdlock(&table->locks[bucket_index]) != 0){
         return false; 
@@ -396,7 +433,11 @@ int table_add(hashtable_t* table, const unsigned char* key, void* value) {
     }
 
     uint64_t hash_full = hash(key);
+    #if defined(ENABLE_ONLY_POWER_2_SIZE) && (ENABLE_ONLY_POWER_2_SIZE == 1)
+    size_t bucket_index = hash_full & (table->buckets_count - 1);
+    #else
     size_t bucket_index = hash_full % table->buckets_count;
+    #endif
 
     if (pthread_rwlock_wrlock(&table->locks[bucket_index]) != 0) {
         return -1; 
@@ -444,7 +485,11 @@ int table_replace(hashtable_t* table, const unsigned char* key, void* new_value,
     }
 
     uint64_t hash_full = hash(key);
+    #if defined(ENABLE_ONLY_POWER_2_SIZE) && (ENABLE_ONLY_POWER_2_SIZE == 1)
+    size_t bucket_index = hash_full & (table->buckets_count - 1);
+    #else
     size_t bucket_index = hash_full % table->buckets_count;
+    #endif
 
     if (pthread_rwlock_wrlock(&table->locks[bucket_index]) != 0) {
         return -1; 
@@ -493,31 +538,43 @@ double table_load_factor(hashtable_t* table) {
   // Count
 
 
-size_t table_memory_usage(hashtable_t* table, size_t (*value_sizer)(const void* value)) {
-    if (table == NULL) {
+size_t table_memory_usage(hashtable_t* table, size_t (*value_sizer)(const void* value)){
+    if (table == NULL){
         return 0;
     }
 
     size_t total_size = 0;
-
     total_size += sizeof(hashtable_t);
     total_size += table->buckets_count * sizeof(hashtable_bucket_t);
     total_size += table->lock_count * sizeof(pthread_rwlock_t);
 
-    if (value_sizer != NULL) {
-        for (size_t i = 0; i < table->buckets_count; i++) {
-            if (pthread_rwlock_rdlock(&table->locks[i]) != 0) {
+    if (value_sizer == NULL){
+        return total_size; 
+    }
 
-                return (size_t)-1;
-            }
-            for (int j = 0; j < BUCKET_CAPACITY; j++) {
-                if (table->buckets[i].in_use[j] && table->buckets[i].values[j] != NULL) {
-                    total_size += value_sizer(table->buckets[i].values[j]);
+    for (size_t i = 0; i < table->buckets_count; i++){
+        if (pthread_rwlock_rdlock(&table->locks[i]) != 0){
+            fprintf(stderr, "[ERROR] table_memory_usage: Failed to acquire read lock on bucket %zu.\n", i);
 
-                }
+            for (size_t k = 0; k < i; k++){
+                pthread_rwlock_unlock(&table->locks[k]);
             }
-            pthread_rwlock_unlock(&table->locks[i]);
+
+            return (size_t)-1; 
         }
+    }
+
+    for (size_t i = 0; i < table->buckets_count; i++){
+        for (int j = 0; j < BUCKET_CAPACITY; j++) {
+            if (table->buckets[i].in_use[j] && 
+                table->buckets[i].values[j] != NULL) {
+                total_size += value_sizer(table->buckets[i].values[j]);
+            }
+        }
+    }
+    
+    for (size_t i = 0; i < table->buckets_count; i++){
+        pthread_rwlock_unlock(&table->locks[i]);
     }
 
     return total_size;
@@ -554,5 +611,5 @@ double table_occupied_bucket_counter(hashtable_t* table) {
 }
 
 size_t table_total_elem(hashtable_t* table){
-    return table->elem_count;
+    return __atomic_load_n(&table->elem_count, __ATOMIC_RELAXED);
 }

@@ -17,6 +17,7 @@ add_executable(${EXECUTABLE_NAME}
     src/hashing_functionality.c
     src/hashtable.c
     src/string_functionality.c
+    src/bitwise_functionality.c
 )
 
 target_compile_definitions(${EXECUTABLE_NAME}

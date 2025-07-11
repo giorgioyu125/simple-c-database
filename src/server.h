@@ -10,8 +10,8 @@
 
 // Macro
 
-#define MAX_URL_LENGTH 1024
-#define INACTIVITY_TIMEOUT (60 * 1000)
+#define MAX_URL_LENGTH      1024
+#define INACTIVITY_TIMEOUT (60 * 1000) // expressed in ms
 
 // Data
 

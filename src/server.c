@@ -220,8 +220,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    fprintf(stderr, "[INFO] Server listening on http://0.0.0.0:7000.\n");
-    fprintf(stderr, "[INFO] Test example: telnet localhost 7000\n");
+    fprintf(stderr, "[INFO] Server listening on port 7000.\n");
 
     int run_result = uv_run(loop, UV_RUN_DEFAULT);
     

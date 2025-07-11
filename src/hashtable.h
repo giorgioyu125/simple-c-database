@@ -7,13 +7,16 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include "string_functionality.h"
+#include "bitwise_functionality.h"
 
 // MACRO
 
-#define LIKELY(x)       __builtin_expect(!!(x), 1)
-#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
+#define LIKELY(x)                 __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)               __builtin_expect(!!(x), 0)
 
-#define BUCKET_CAPACITY 4
+#define BUCKET_CAPACITY           8
+
+#define ENABLE_ONLY_POWER_2_SIZE  1
 
 // DATA
 
