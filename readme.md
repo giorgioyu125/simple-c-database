@@ -50,7 +50,7 @@ This project uses CMake to manage the build process.
 
 ## Usage
 
-You can simply execute and run the server with the command ./simple_c_database <BUCKET_NUMBER> in the build directory. The number of bucket is the number of high-speed unit preallocated in the database, they all can store a maximum of 4 values by default, but you can change this number in the MACRO section of the command.c in the part that says: #define BUCKET_CAPACITY 4. (Substitute 4 with the desidered number but 6 and 8 are the most reliable and efficent for simd optimization.)
+You can simply execute and run the server with the command ./simple_c_database <BUCKET_NUMBER> in the build directory. The number of bucket is the number of high-speed unit preallocated in the database, they all can store a maximum of 8 values by default, but you can change this number in the MACRO section of the command.c in the part that says: #define BUCKET_CAPACITY 4. (Substitute 8 with the desidered number but 4 and 8 are the most reliable and efficent for simd optimization.)
 
 ---
 
