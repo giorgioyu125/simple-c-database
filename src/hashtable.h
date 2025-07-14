@@ -7,7 +7,6 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include "string_functionality.h"
-#include "bitwise_functionality.h"
 
 // MACRO
 
@@ -20,7 +19,7 @@
 
 // DATA
 
-typedef struct hashtable_bucket_t{
+typedef struct __attribute__((aligned(64))) hashtable_bucket_t {
     uint8_t in_use[BUCKET_CAPACITY];
     uint64_t hashes[BUCKET_CAPACITY];
 
@@ -32,7 +31,7 @@ typedef struct hashtable_bucket_t{
 typedef struct hashtable_t{
     hashtable_bucket_t* buckets;
     size_t buckets_count;
-    size_t elem_count;
+    _Atomic(size_t) elem_count;
 
     pthread_rwlock_t* locks;
     size_t lock_count;

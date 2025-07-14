@@ -32,20 +32,6 @@
 // DATA
 
 typedef enum : uint8_t{
-    DATA_TYPE_BOOL,
-    DATA_TYPE_INT,
-    DATA_TYPE_STRING,
-    DATA_TYPE_VOID_PTR,
-    DATA_TYPE_SIZE,
-    DATA_TYPE_DOUBLE,
-    DATA_TYPE_HASHTABLE_T_PTR,
-    DATA_TYPE_BIN,
-    DATA_TYPE_DATA_ENTRY_PTR,
-    DATA_TYPE_EMPTY,
-    DATA_TYPE_ERROR
-} data_type_t;
-
-typedef enum : uint8_t{
     CMD_TYPE_GET,
     CMD_TYPE_SET,
     CMD_TYPE_ADD,
@@ -69,7 +55,6 @@ typedef enum : uint8_t{
 
 typedef struct data_entry_t{   // DB stored structure
     size_t size;
-    data_type_t type;
     unsigned char data[];
 } data_entry_t;
 
@@ -164,7 +149,6 @@ typedef struct command_result_t{
 
         struct count_output{
             cmd_count_t type;
-            data_type_t out_type;
             union count_t{
                 double counter_d;
                 size_t counter_s;
@@ -188,8 +172,6 @@ typedef struct execute_result_t{
 
     unsigned char* body;
     size_t body_length;
-
-    data_type_t content_type;
 } execute_result_t;
 
 typedef struct command_registry command_registry;
@@ -212,9 +194,10 @@ typedef struct server_context_t{
 
     command_registry* registry_create();
     int registry_destroy(command_registry** reg);
-    ssize_t find_command_index(command_registry* reg, const char* command_name);
-    bool stocmdcount(const char* subtype_str, cmd_count_t* out_type);
     void free_execute_result(execute_result_t* result);
-    void destroy_data_entry(void* value);
+    size_t std_value_sizer(const void* value);
+    void destroy_value_wrapper(void* data);
+    size_t std_value_sizer(const void* value);
+
 
 #endif
