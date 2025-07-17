@@ -196,8 +196,7 @@ static command_result_t cmd_del(hashtable_t* context, command_data_t* input) {
     if (error == 0) {
         fprintf(stderr, "[INFO] cmd_del: Successfully executed DEL for key: '%s'.\n", key_to_delete);
         result.type = CMD_TYPE_DEL;
-    } else {
-
+    } else{
         fprintf(stderr, "[ERROR] cmd_del: Failed to delete key '%s' (error code: %d).\n", key_to_delete, error);
     }
 
@@ -355,16 +354,16 @@ static command_result_t cmd_count(hashtable_t* context, command_data_t* input) {
 static command command_table[] = { // Name needs to be in lexicographic order
     // name         tag                     proc               arity   flags
     //----------------------------------------------------------------------
-    { "ADD",        CMD_TYPE_ADD,           cmd_add,           2,      "wa"},
-    { "CLEAR",      CMD_TYPE_CLEAR,         cmd_clear,         0,      "w" },
-    { "COUNT",      CMD_TYPE_COUNT,         cmd_count,         1,      "r" },
-    { "DEL",        CMD_TYPE_DEL,           cmd_del,           1,      "w" },
-    { "EXIST",      CMD_TYPE_EXIST,         cmd_exist,         1,      "r" },
-    { "GET",        CMD_TYPE_GET,           cmd_get,           1,      "r" },
-    { "LOADFACTOR", CMD_TYPE_LOADFACTOR,    cmd_load_factor,   0,      "r" },
-    { "REPLACE",    CMD_TYPE_REPLACE,       cmd_replace,       2,      "wa"},
-    { "RESIZE",     CMD_TYPE_RESIZE,        cmd_resize,        1,      "w" },
-    { "SET",        CMD_TYPE_SET,           cmd_set,           2,      "wa"},
+    { "ADD",        CMD_TYPE_ADD,           cmd_add,           2,      "w"  },
+    { "CLEAR",      CMD_TYPE_CLEAR,         cmd_clear,         0,      "w"  },
+    { "COUNT",      CMD_TYPE_COUNT,         cmd_count,         1,      "r"  },
+    { "DEL",        CMD_TYPE_DEL,           cmd_del,           1,      "w"  },
+    { "EXIST",      CMD_TYPE_EXIST,         cmd_exist,         1,      "r"  },
+    { "GET",        CMD_TYPE_GET,           cmd_get,           1,      "ra" },
+    { "LOADFACTOR", CMD_TYPE_LOADFACTOR,    cmd_load_factor,   0,      "r"  },
+    { "REPLACE",    CMD_TYPE_REPLACE,       cmd_replace,       2,      "w"  },
+    { "RESIZE",     CMD_TYPE_RESIZE,        cmd_resize,        1,      "w"  },
+    { "SET",        CMD_TYPE_SET,           cmd_set,           2,      "w"  },
 
     { NULL,         255,                    NULL,              0,      NULL}
 };
@@ -531,7 +530,7 @@ execute_result_t execute_command(server_context_t* server_ctx,
     command_registry* reg = server_ctx->reg;
     hashtable_t* context = server_ctx->db;
 
-    if ((reg == NULL) || (command_name == NULL)) {
+    if ((reg == NULL) || (command_name == NULL)){
         return create_error_response(400, "Invalid arguments to dispatcher");
     }
 
@@ -549,20 +548,16 @@ execute_result_t execute_command(server_context_t* server_ctx,
     if (build_command_data(cmd->tag, argv, args_lengths, &command_inputs) != 0){
         return create_error_response(400, "Invalid argument format");
     }
-    
+
     command_result_t cmd_result = cmd->proc(context, &command_inputs);
-    
-    if (cmd_result.output.set_output.error != 0) {
-        if (strchr(cmd->flags, 'a') != 0) {
-            destroy_value_wrapper(command_inputs.in.set_input.value->data);
-        }
-        return create_error_response(409, TCP_OPERATION_FAILED);
-    }
 
     execute_result_t final_result = { .status_code = 200 };
     switch (cmd_result.type){
-        case CMD_TYPE_GET:{ 
-            final_result.body = cmd_result.output.get_output.value->data;
+        case CMD_TYPE_GET:{
+            final_result.body = memdup(cmd_result.output.get_output.value->data, cmd_result.output.get_output.value->size);
+            if (final_result.body == NULL){
+                return create_error_response(500, TCP_MEMORY_ERROR);
+            }
             final_result.body_length = cmd_result.output.get_output.value->size;
             break;
         }
@@ -576,25 +571,24 @@ execute_result_t execute_command(server_context_t* server_ctx,
             if (cmd_result.output.set_output.error != 0){
                 return create_error_response(409, TCP_OPERATION_FAILED);
             } else{
-                final_result.body = ustrdup(TCP_SUCCESS); 
-                final_result.body_length = 4;
+                final_result.body = (unsigned char*)ustrdup(TCP_SUCCESS); 
+                final_result.body_length = sizeof(TCP_SUCCESS) - 1;
             }
             break;
         }
 
         case CMD_TYPE_EXIST:{
-            final_result.body = ustrdup(cmd_result.output.exist_output.existence ? "1" : "0");
+            final_result.body = (unsigned char*)ustrdup(cmd_result.output.exist_output.existence ? TCP_TRUE : TCP_FALSE);
             if (final_result.body == NULL){
                 return create_error_response(500, TCP_MEMORY_ERROR);
             }
-
-            final_result.body_length = 2;
+            final_result.body_length = ustrlen(final_result.body); 
             break;
         }
 
         case CMD_TYPE_COUNT: {
-            int required_len = 0; 
             char temp_buffer[64];
+            int required_len = 0; 
 
             switch (cmd_result.output.count_output.type) {
                 case CMD_COUNT_OCCUPIED_BUCKET: {
@@ -615,7 +609,7 @@ execute_result_t execute_command(server_context_t* server_ctx,
                     return create_error_response(500, "Unknown COUNT result type");
             }
 
-            if (required_len < 0) {
+            if (required_len < 0 || required_len >= (int)sizeof(temp_buffer)) {
                 return create_error_response(500, "Failed to format COUNT result");
             }
 
@@ -625,30 +619,36 @@ execute_result_t execute_command(server_context_t* server_ctx,
             }
 
             memcpy(final_result.body, temp_buffer, (size_t)required_len);
-            final_result.body[required_len] = '\0'; 
-
             final_result.body_length = (size_t)required_len;
-
             break;
         }
 
-        case CMD_TYPE_LOADFACTOR:{
+        case CMD_TYPE_LOADFACTOR: {
             char buffer[64];
-            snprintf(buffer, sizeof(buffer), "%.4f", cmd_result.output.load_factor_output.load_factor);
+            int len = snprintf(buffer, sizeof(buffer), "%.4f", cmd_result.output.load_factor_output.load_factor);
 
-            final_result.body = ustrdup(buffer);
-            if (final_result.body == NULL) return create_error_response(500, TCP_MEMORY_ERROR);
-            final_result.body_length = ustrlen(final_result.body);
+            if (len < 0 || len >= (int)sizeof(buffer)) {
+                 return create_error_response(500, "Failed to format LOADFACTOR result");
+            }
+
+            final_result.body = (unsigned char*)ustrdup(buffer);
+            if (final_result.body == NULL) {
+                return create_error_response(500, TCP_MEMORY_ERROR);
+            }
+
+            final_result.body_length = (size_t)len;
             break;
         }
 
         case CMD_TYPE_EMPTY:
             return create_error_response(404, TCP_KEY_NOT_FOUND);
+
         case CMD_TYPE_ERROR:
             return create_error_response(500, TCP_INTERNAL_ERROR);
+
         default:
             return create_error_response(500, TCP_NON_DEFAULT_T);
     }
 
-    return final_result;
+  return final_result;
 }

@@ -22,6 +22,9 @@
     unsigned int sizet_to_uint(size_t s, bool* error);
     size_t ssizet_to_sizet(ssize_t s, bool* error);
 
+    
+    unsigned char* ustrncpy(unsigned char* dest, const unsigned char* src, size_t n);
+    int ustrncmp(const unsigned char *s1, const unsigned char *s2, size_t n);
     int tokenize_string(const char* delimiter, char* input_str, int max_tokens, char** out_tokens);
     size_t ustrlen(const unsigned char* str);
     unsigned char* ustrdup(const char *src);

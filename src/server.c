@@ -82,7 +82,7 @@ void append_to_buffer(client_context_t* ctx, const char* data, size_t len) {
             new_capacity = ctx->buffer_used + len;
         }
         char* new_buffer = realloc(ctx->buffer, new_capacity);
-        if (!new_buffer) {
+        if (new_buffer == NULL) {
             fprintf(stderr, "[ERROR] Failed to realloc client buffer\n");
             uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
             return;
@@ -94,25 +94,38 @@ void append_to_buffer(client_context_t* ctx, const char* data, size_t len) {
     ctx->buffer_used += len;
 }
 
-      
 void parse_buffer(client_context_t* ctx) {
     bool err;
 
-    while (1) {
-        if (ctx->state == PARSE_STATE_EXPECT_TYPE) {
-            if (ctx->buffer_used < 1) {
+    while (true) {
+        if (ctx->state == PARSE_STATE_EXPECT_TYPE){
+            size_t leading_whitespace = 0;
+            while (leading_whitespace < ctx->buffer_used &&
+                   (ctx->buffer[leading_whitespace] == '\r' || ctx->buffer[leading_whitespace] == '\n')){
+                leading_whitespace++;
+            }
+
+            if (leading_whitespace > 0){
+                memmove(ctx->buffer, ctx->buffer + leading_whitespace, ctx->buffer_used - leading_whitespace);
+                ctx->buffer_used -= leading_whitespace;
+            }
+
+            if (ctx->buffer_used < 1){
                 break;
             }
 
-            if (ctx->buffer[0] != '*') {
-                fprintf(stderr, "[ERROR] parse_buffer: Expected '*' for array type.\n");
+            if (ctx->buffer[0] != '*'){
+                fprintf(stderr,
+                        "[ERROR] parse_buffer: Expected '*' for array type, but got '%c' (ASCII: %d).\n",
+                        ctx->buffer[0],
+                        ctx->buffer[0]);
                 uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
                 return;
             }
 
             char* crlf = memchr(ctx->buffer, '\r', ctx->buffer_used);
             if (!crlf || (crlf + 1 >= ctx->buffer + ctx->buffer_used) || *(crlf + 1) != '\n') {
-                break;
+                break; 
             }
 
             long n_args = strtol(ctx->buffer + 1, NULL, 10);
@@ -136,22 +149,23 @@ void parse_buffer(client_context_t* ctx) {
             memmove(ctx->buffer, ctx->buffer + consumed, ctx->buffer_used - consumed);
             ctx->buffer_used -= consumed;
 
-        } else if (ctx->state == PARSE_STATE_EXPECT_LENGTH) {
-            if (ctx->buffer_used < 1 || ctx->buffer[0] != '$') {
-                if (ctx->buffer_used > 0) {
-                     fprintf(stderr, "[ERROR] parse_buffer: Expected '$' for bulk string length.\n");
-                     uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
-                }
-                break;
+        } else if (ctx->state == PARSE_STATE_EXPECT_LENGTH){
+            if (ctx->buffer_used > 0 && ctx->buffer[0] != '$') {
+                fprintf(stderr, "[ERROR] parse_buffer: Expected '$' for bulk string length.\n");
+                uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
+                return; 
+            }
+            if (ctx->buffer_used < 1){
+                break; 
             }
 
             char* crlf = memchr(ctx->buffer, '\r', ctx->buffer_used);
-            if (!crlf || (crlf + 1 >= ctx->buffer + ctx->buffer_used) || *(crlf + 1) != '\n') {
+            if ((crlf == NULL) || (crlf + 1 >= ctx->buffer + ctx->buffer_used) || *(crlf + 1) != '\n') {
                 break;
             }
 
             long len = strtol(ctx->buffer + 1, NULL, 10);
-            if (len < 0 || len > 8192){
+            if (len < 0 || len > 8192) {
                 fprintf(stderr, "[ERROR] parse_buffer: Invalid bulk string length: %ld\n", len);
                 uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
                 return;
@@ -180,18 +194,18 @@ void parse_buffer(client_context_t* ctx) {
                 ctx->temp_arg_lengths = malloc(ctx->args_total * sizeof(size_t));
                 if (!ctx->temp_argv || !ctx->temp_arg_lengths) {
                     fprintf(stderr, "[ERROR] parse_buffer: Failed to allocate memory for command arguments.\n");
-                    free_parser_resources(ctx); // free whichever succeeded
+                    free_parser_resources(ctx);
                     uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
                     return;
                 }
             }
 
             ctx->temp_argv[ctx->args_parsed] = malloc(ctx->data_to_read + 1);
-            if (!ctx->temp_argv[ctx->args_parsed]) {
-                 fprintf(stderr, "[ERROR] parse_buffer: Failed to allocate memory for argument string.\n");
-                 free_parser_resources(ctx);
-                 uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
-                 return;
+            if (ctx->temp_argv[ctx->args_parsed] == NULL) {
+                fprintf(stderr, "[ERROR] parse_buffer: Failed to allocate memory for argument string.\n");
+                free_parser_resources(ctx);
+                uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
+                return;
             }
             memcpy(ctx->temp_argv[ctx->args_parsed], ctx->buffer, ctx->data_to_read);
             ctx->temp_argv[ctx->args_parsed][ctx->data_to_read] = '\0';
@@ -203,59 +217,68 @@ void parse_buffer(client_context_t* ctx) {
             memmove(ctx->buffer, ctx->buffer + consumed, ctx->buffer_used - consumed);
             ctx->buffer_used -= consumed;
 
-            if (ctx->args_parsed == ctx->args_total){
+            if (ctx->args_parsed == ctx->args_total) {
                 char* command_name = ctx->temp_argv[0];
                 int argc = sizet_to_int(ctx->args_total - 1, &err);
+                if (err) {
+                    fprintf(stderr, "[ERROR] parse_buffer: Argument count conversion failed.\n");
+                    free_parser_resources(ctx);
+                    uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
+                    return;
+                }
 
                 char** command_argv = (argc > 0) ? &ctx->temp_argv[1] : NULL;
                 const size_t* args_lengths = (argc > 0) ? &ctx->temp_arg_lengths[1] : NULL;
 
                 execute_result_t result = execute_command(ctx->server_ctx, command_name, argc, command_argv, args_lengths);
 
-                const char* response_body = (const char*)result.body;
+                unsigned char* response_buffer = result.body;
                 size_t body_len = result.body_length;
-                char* response_str = malloc(body_len + 2);
-                if (!response_str){
-                    free_execute_result(&result); 
-                    free_parser_resources(ctx); 
-                    uv_close((uv_handle_t*)&ctx->client_handle, on_client_close); 
-                    return; 
+
+                unsigned char* temp_realloc = realloc(response_buffer, body_len + 1);
+                if (temp_realloc == NULL) {
+                    fprintf(stderr, "[ERROR] parse_buffer: Failed to realloc response buffer.\n");
+
+                    free(response_buffer);
+                    free_parser_resources(ctx);
+
+                    uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
+                    return;
                 }
-                
-                memcpy(response_str, response_body, body_len);
-                response_str[body_len] = '\n';
-                response_str[body_len + 1] = '\0';
+
+                response_buffer = temp_realloc;
+                response_buffer[body_len] = '\n';
 
                 write_req_t* req = malloc(sizeof(write_req_t));
-                if (!req){
-                    free(response_str); 
-                    free_execute_result(&result); 
-                    free_parser_resources(ctx); 
-                    uv_close((uv_handle_t*)&ctx->client_handle, on_client_close); 
-                    return; 
-                    }
+                if (!req) {
+                    fprintf(stderr, "[ERROR] parse_buffer: Failed to allocate write request.\n");
 
-                unsigned int write_len = sizet_to_uint(body_len + 1, &err);
-                if (err){ 
-                    free(response_str); 
-                    free(req); 
-                    free_execute_result(&result); 
-                    free_parser_resources(ctx); 
-                    uv_close((uv_handle_t*)&ctx->client_handle, on_client_close); 
-                    return; 
+                    free(response_buffer);
+                    free_parser_resources(ctx);
+
+                    uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
+                    return;
                 }
 
-                req->buf = uv_buf_init(response_str, write_len);
+                unsigned int write_len = sizet_to_uint(body_len + 1, &err);
+                if (err) {
+                    fprintf(stderr, "[ERROR] parse_buffer: Response length conversion failed.\n");
+                    free(response_buffer);
+                    free(req);
+                    free_parser_resources(ctx);
+                    uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
+                    return;
+                }
+
+                req->buf = uv_buf_init((char*)response_buffer, write_len);
                 uv_write((uv_write_t*)req, (uv_stream_t*)&ctx->client_handle, &req->buf, 1, on_write_complete);
 
-                free_execute_result(&result);
                 free_parser_resources(ctx);
                 reset_parser(ctx);
-
-            } else{
+            } else {
                 ctx->state = PARSE_STATE_EXPECT_LENGTH;
             }
-        } else{
+        } else {
             break;
         }
     }

@@ -61,20 +61,12 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(UV REQUIRED IMPORTED_TARGET libuv)
 
-find_path(LLHTTP_INCLUDE_DIR NAMES llhttp.h)
-find_library(LLHTTP_LIBRARY NAMES llhttp)
-if(NOT LLHTTP_INCLUDE_DIR OR NOT LLHTTP_LIBRARY)
-    message(FATAL_ERROR "Libreria llhttp non trovata.")
-endif()
-message(STATUS "Trovata libreria llhttp: ${LLHTTP_LIBRARY}")
-
 find_package(Threads REQUIRED)
 
 
 target_include_directories(${EXECUTABLE_NAME}
     PRIVATE 
         src
-        ${LLHTTP_INCLUDE_DIR}
 )
 
 # Collega le librerie necessarie
@@ -82,7 +74,6 @@ target_link_libraries(${EXECUTABLE_NAME}
     PRIVATE
         Threads::Threads
         PkgConfig::UV     
-        ${LLHTTP_LIBRARY} 
 )
 
 message(STATUS "Configuration complete. Use 'cmake --build .' to build.")

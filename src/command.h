@@ -28,6 +28,10 @@
     #define TCP_NON_DEFAULT_T     "Internal error: unhandled result type"
     #define TCP_COUNT_ERROR       "Internal error: Unknown COUNT result type"
     #define TCP_MEMORY_ERROR      "Out of memory"
+    #define TCP_TRUE              "1"
+    #define TCP_FALSE             "0"
+
+
 
 // DATA
 

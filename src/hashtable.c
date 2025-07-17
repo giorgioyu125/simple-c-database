@@ -221,11 +221,15 @@ int table_resize(hashtable_t* table, size_t new_capacity) {
     return 0;
 }
 
-// Core Ops
+// Core Ops (Valid void* value are dinamically allocated)
 
 int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*value_destroyer)(void*)){
-    if ((table == NULL) || (key == NULL)){
-        return -1;
+    if ((table == NULL) || (key == NULL)) {
+        return -1; 
+    }
+
+    if (ustrlen(key) >= KEY_MAX_LEN) {
+        return -3; 
     }
 
     unsigned long hash_full = hash(key);
@@ -237,25 +241,26 @@ int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*
     #endif
 
     if (pthread_rwlock_wrlock(&table->locks[bucket_index]) != 0){
-        return -1;
+        return -1; 
     }
 
     hashtable_bucket_t* bucket = &table->buckets[bucket_index];
-    int first_empty_slot = -1; 
+    int first_empty_slot = -1;
 
     for (int i = 0; i < BUCKET_CAPACITY; i++){
-        if ((bucket->in_use[i]) && 
-            ((bucket->hashes[i]) == hash_full) && 
-            (ustrcmp(bucket->keys[i], key) == 0)){
-            if ((value_destroyer != NULL) && (bucket->values[i] != NULL)) {
-                value_destroyer(bucket->values[i]);
-            }
+        if (bucket->in_use[i] && 
+           (bucket->hashes[i] == hash_full) && 
+           (ustrncmp(bucket->keys[i], key, KEY_MAX_LEN) == 0)){
 
-            bucket->values[i] = value;
+            if ((value_destroyer != NULL) && (bucket->values[i] != NULL)){
+                value_destroyer(bucket->values[i]); 
+            }
+            bucket->values[i] = value; 
 
             pthread_rwlock_unlock(&table->locks[bucket_index]);
             return 0; 
-        } else if (!bucket->in_use[i]){
+        } else if (!bucket->in_use[i]) { 
+
             if (first_empty_slot == -1) {
                 first_empty_slot = i;
             }
@@ -265,15 +270,16 @@ int table_set(hashtable_t* table, const unsigned char* key, void* value, void (*
     if (first_empty_slot != -1) {
         int i = first_empty_slot;
 
-        bucket->in_use[i] = 1;
+        bucket->in_use[i] = true;
         bucket->hashes[i] = hash_full;
-        bucket->values[i] = value;
-        memcpy(bucket->keys[i], key, KEY_MAX_LEN); 
+        bucket->values[i] = value; 
+
+        ustrncpy(bucket->keys[i], key, KEY_MAX_LEN); 
 
         atomic_fetch_add_explicit(&table->elem_count, 1, memory_order_relaxed);
 
         pthread_rwlock_unlock(&table->locks[bucket_index]);
-        return 0;
+        return 0; 
     }
 
     pthread_rwlock_unlock(&table->locks[bucket_index]);
@@ -303,7 +309,7 @@ void* table_get(hashtable_t* table, const unsigned char* key, size_t (*value_siz
     for (int i = 0; i < BUCKET_CAPACITY; i++) {
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            ustrcmp(bucket->keys[i], key) == 0) {
+            ustrncmp(bucket->keys[i], key, KEY_MAX_LEN) == 0) {
 
             internal_value = bucket->values[i];
             break;
@@ -322,14 +328,9 @@ void* table_get(hashtable_t* table, const unsigned char* key, size_t (*value_siz
         return NULL; 
     }
 
+    void* value_copy = memdup(internal_value, total_size);
+
     pthread_rwlock_unlock(&table->locks[bucket_index]);
-
-    void* value_copy = malloc(total_size);
-
-    if (value_copy != NULL) {
-        memcpy(value_copy, internal_value, total_size);
-    }
-
     return value_copy;
 }
 
@@ -354,7 +355,7 @@ int table_delete(hashtable_t* table, const unsigned char* key, void (*value_dest
     for (int i = 0; i < BUCKET_CAPACITY; i++) {
         if ((bucket->in_use[i]) &&
             (bucket->hashes[i] == hash_full) &&
-            (ustrcmp(bucket->keys[i], key) == 0)) {
+            (ustrncmp(bucket->keys[i], key, KEY_MAX_LEN) == 0)) {
 
             bucket->in_use[i] = 0; 
 
@@ -398,7 +399,7 @@ bool table_exist(hashtable_t* table, const unsigned char* key){
     for (int i = 0; i < BUCKET_CAPACITY; i++){
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            ustrcmp(bucket->keys[i], key) == 0){
+            ustrncmp(bucket->keys[i], key, KEY_MAX_LEN) == 0){
 
             found = true;
             break; 
@@ -410,7 +411,7 @@ bool table_exist(hashtable_t* table, const unsigned char* key){
     return found;
 }
 
-int table_add(hashtable_t* table, const unsigned char* key, void* value) {
+int table_add(hashtable_t* table, const unsigned char* key, void* value){
     if ((table == NULL) || (key == NULL)) {
         return -1; 
     }
@@ -429,11 +430,10 @@ int table_add(hashtable_t* table, const unsigned char* key, void* value) {
     hashtable_bucket_t* bucket = &table->buckets[bucket_index];
     int first_empty_slot = -1;
 
-    for (int i = 0; i < BUCKET_CAPACITY; i++) {
-
+    for (int i = 0; i < BUCKET_CAPACITY; i++){
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            ustrcmp(bucket->keys[i], key) == 0) {
+            ustrncmp(bucket->keys[i], key, KEY_MAX_LEN) == 0){
 
             pthread_rwlock_unlock(&table->locks[bucket_index]);
             return -3; 
@@ -449,7 +449,7 @@ int table_add(hashtable_t* table, const unsigned char* key, void* value) {
 
         bucket->in_use[i] = 1;
         bucket->hashes[i] = hash_full;
-        memcpy(bucket->keys[i], key, KEY_MAX_LEN);
+        ustrncpy(bucket->keys[i], key, KEY_MAX_LEN); 
         bucket->values[i] = value;
 
         atomic_fetch_add_explicit(&table->elem_count, 1, memory_order_relaxed);
@@ -483,7 +483,7 @@ int table_replace(hashtable_t* table, const unsigned char* key, void* new_value,
     for (int i = 0; i < BUCKET_CAPACITY; i++) {
         if (bucket->in_use[i] &&
             bucket->hashes[i] == hash_full &&
-            ustrcmp(bucket->keys[i], key) == 0) {
+            ustrncmp(bucket->keys[i], key, KEY_MAX_LEN) == 0) {
 
             if (value_destroyer != NULL && bucket->values[i] != NULL) {
                 value_destroyer(bucket->values[i]);
@@ -499,7 +499,6 @@ int table_replace(hashtable_t* table, const unsigned char* key, void* new_value,
     pthread_rwlock_unlock(&table->locks[bucket_index]);
     return -2; 
 }
-
 
 // Monitoring
 

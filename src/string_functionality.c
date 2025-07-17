@@ -141,6 +141,23 @@ void* memdup(const void* src, size_t len){
 
 // Strings Functionality
 
+int ustrncmp(const unsigned char *s1, const unsigned char *s2, size_t n){
+    if (n == 0) {
+        return 0;
+    }
+
+    while ((n-- > 0) && (*s1 == *s2)) {
+
+        if (*s1 == '\0') {
+            return 0;
+        }
+        s1++;
+        s2++;
+    }
+
+    return *s1 - *s2;
+}
+
 int tokenize_string(const char* delimiter, char* input_str, int max_tokens, char** out_tokens){
     int count = 0;
 
@@ -164,6 +181,20 @@ int tokenize_string(const char* delimiter, char* input_str, int max_tokens, char
     return count;
 }
 
+unsigned char* ustrncpy(unsigned char* dest, const unsigned char* src, size_t n){
+    if ((dest == NULL) || (src == NULL) || (n == 0)) {
+        return dest;
+    }
+    
+    size_t i;
+    for (i = 0; (i < n - 1) && (src[i] != '\0'); i++) {
+        dest[i] = src[i];
+    }
+
+    dest[i] = '\0';
+
+    return dest;
+}
 
 size_t ustrlen(const unsigned char* str){
 
