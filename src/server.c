@@ -21,6 +21,28 @@ void on_timer_close(uv_handle_t* handle){
     printf("[DEBUG] on_timer_close: Timer closed. Client context freed.\n");
 }
 
+void free_parser_resources(client_context_t* ctx) {
+    if (ctx->temp_argv) {
+        for (size_t i = 0; i < ctx->args_parsed; i++) {
+            free(ctx->temp_argv[i]);
+        }
+        free(ctx->temp_argv);
+        ctx->temp_argv = NULL;
+    }
+    if (ctx->temp_arg_lengths) {
+        free(ctx->temp_arg_lengths);
+        ctx->temp_arg_lengths = NULL;
+    }
+}
+
+void reset_parser(client_context_t* ctx) {
+    ctx->state = PARSE_STATE_EXPECT_TYPE;
+    ctx->args_total = 0;
+    ctx->args_parsed = 0;
+    ctx->data_to_read = 0;
+}
+
+
 void on_client_close(uv_handle_t* handle){
     client_context_t* ctx = handle->data;
     printf("[DEBUG] on_client_close: Client stream closed.\n");
@@ -29,6 +51,9 @@ void on_client_close(uv_handle_t* handle){
         printf("[DEBUG] on_client_close: Closing associated timer.\n");
         uv_close((uv_handle_t*)&ctx->inactivity_timer, on_timer_close);
     }
+
+    free_parser_resources(ctx);
+    reset_parser(ctx);
 }
 
 void on_client_timeout(uv_timer_t* timer){
@@ -54,26 +79,7 @@ void alloc_buffer(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf){
     buf->len = (buf->base != NULL) ? suggested_size : 0;
 }
 
-void free_parser_resources(client_context_t* ctx) {
-    if (ctx->temp_argv) {
-        for (size_t i = 0; i < ctx->args_parsed; i++) {
-            free(ctx->temp_argv[i]);
-        }
-        free(ctx->temp_argv);
-        ctx->temp_argv = NULL;
-    }
-    if (ctx->temp_arg_lengths) {
-        free(ctx->temp_arg_lengths);
-        ctx->temp_arg_lengths = NULL;
-    }
-}
 
-void reset_parser(client_context_t* ctx) {
-    ctx->state = PARSE_STATE_EXPECT_TYPE;
-    ctx->args_total = 0;
-    ctx->args_parsed = 0;
-    ctx->data_to_read = 0;
-}
 
 void append_to_buffer(client_context_t* ctx, const char* data, size_t len) {
     if (ctx->buffer_used + len > ctx->buffer_capacity) {
@@ -274,8 +280,8 @@ void parse_buffer(client_context_t* ctx) {
                 req->buf = uv_buf_init((char*)response_buffer, write_len);
                 uv_write((uv_write_t*)req, (uv_stream_t*)&ctx->client_handle, &req->buf, 1, on_write_complete);
 
-                free_parser_resources(ctx);
-                reset_parser(ctx);
+                // free_parser_resources(ctx);
+                // reset_parser(ctx);
             } else {
                 ctx->state = PARSE_STATE_EXPECT_LENGTH;
             }
@@ -322,20 +328,22 @@ void on_new_connection(uv_stream_t* server, int status) {
         return; 
     }
 
-    uv_tcp_init(uv_default_loop(), &ctx->client_handle);
+    uv_tcp_init(server->loop, &ctx->client_handle);
 
     ctx->client_handle.data = ctx;
     ctx->server_ctx = server->data; 
 
     if (uv_accept(server, (uv_stream_t*)&ctx->client_handle) == 0) {
+        fprintf(stderr, "[INFO] New client connected.\n"); 
+
         reset_parser(ctx);
 
-        uv_timer_init(uv_default_loop(), &ctx->inactivity_timer);
+        uv_timer_init(server->loop, &ctx->inactivity_timer);
         ctx->inactivity_timer.data = ctx; 
         uv_timer_start(&ctx->inactivity_timer, on_client_timeout, INACTIVITY_TIMEOUT, 0);
 
         uv_read_start((uv_stream_t*)&ctx->client_handle, alloc_buffer, on_read);
-    } else {
+    } else{
         fprintf(stderr, "[ERROR] on_new_connection: uv_accept failed.\n");
 
         uv_close((uv_handle_t*)&ctx->client_handle, on_client_close);
