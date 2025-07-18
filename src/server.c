@@ -247,7 +247,8 @@ void parse_buffer(client_context_t* ctx) {
                 }
 
                 response_buffer = temp_realloc;
-                response_buffer[body_len] = '\n';
+                response_buffer[body_len] = '\r';
+                response_buffer[body_len + 1] = '\n';
 
                 write_req_t* req = malloc(sizeof(write_req_t));
                 if (!req) {

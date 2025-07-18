@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+import sys
+import socket
+
+HOST = "localhost"
+PORT = 7000
+
+def format_resp_command(args: list) -> bytes:
+    command_parts = []
+    
+    num_args = len(args)
+    command_parts.append(f"*{num_args}\r\n".encode('utf-8'))
+    
+    for arg in args:
+        arg_bytes = arg.encode('ascii')
+        byte_len = len(arg_bytes)
+        
+        command_parts.append(f"${byte_len}\r\n".encode('utf-8'))
+        
+        command_parts.append(arg_bytes)
+        
+        command_parts.append(b"\r\n")
+        
+    return b"".join(command_parts)
+
+def main():
+    args = sys.argv[1:]
+    
+    if not args:
+        print(f"USE: {sys.argv[0]} <command_name> [args...]")
+        sys.exit(1)
+    try:
+        payload = format_resp_command(args)
+    except Exception as e:
+        print(f"Errore durante la formattazione del comando: {e}")
+        sys.exit(1)
+
+    print(f"Comando inviato (raw): {repr(payload)}")
+    print("---")
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.connect((HOST, PORT))
+            sock.sendall(payload)
+            
+            response = sock.recv(4096)
+            
+            print("Server Answer:")
+            print(response.decode('utf-8').strip())
+
+    except ConnectionRefusedError:
+        print(f"[ERROR]: Connection Refusec. The server {HOST}:{PORT} is up?")
+    except Exception as e:
+        print(f"[ERROR]: {e}")
+
+if __name__ == "__main__":
+    main()
