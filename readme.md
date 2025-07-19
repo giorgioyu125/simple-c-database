@@ -8,7 +8,6 @@ A lightweight, in-memory key-value database implemented in C. It utilizes a hash
 *   **In-Memory Storage**: Data is stored efficiently in memory using a hash table with fixed buckets for speed and resizable table.
 *   **Core Operations**: Supports fundamental CRUD operations via tcp request. (I suggest using netcat for testing)
 *   **Command-Line Interface (CLI)**: Provides an interactive shell for easy database manipulation.
-*   (TODO) **Data Persistence**: Offers `SAVE` and `LOAD` commands to persist data to and restore data from a file.
 *   **C Implementation**: Written entirely in standard C (C23).
 *   **CMake Build System**: Modern and flexible build process managed by CMake.
 
